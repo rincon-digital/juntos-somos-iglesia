@@ -1,11 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, X, BookOpen, FileText, Star, Users, Home } from "lucide-react";
 import { logout } from "@/actions/auth/auth";
 import Image from "next/image";
-import { validateSessionUser } from "@/actions/user";
 import { Role } from "@/lib/types/definitions";
 
 const navItems = [
@@ -21,21 +20,10 @@ const navItems = [
   { label: "Usuarios", href: "/admin/usuarios", icon: Users, roles: [Role.superadmin] },
 ];
 
-export default function AdminHeader() {
+export default function AdminHeader({ userRole }: { userRole: Role }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<Role | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      const session = await validateSessionUser();
-      if (session?.role) {
-        setUserRole(session.role as Role);
-      }
-    };
-    fetchRole();
-  }, []);
 
   const handleLogout = async () => {
     await logout();
