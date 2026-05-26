@@ -39,7 +39,7 @@ export default function AdminHeader() {
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = "/login-admin";
+    window.location.href = "/";
   };
 
   const handleNavClick = (href: string) => {
