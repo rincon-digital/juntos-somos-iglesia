@@ -106,13 +106,13 @@ export default function Navbar() {
         {/* ACCIONES */}
         <div className="flex items-center gap-2">
           <Link
-            href="/login-estudiante"
+            href="/login"
             className={`flex items-center gap-2 bg-white text-black rounded-full font-black uppercase tracking-widest transition-all hover:bg-[#FF6B00] hover:text-white ${
               isScrolled ? "px-4 py-1.5 text-[8px]" : "px-6 py-2.5 text-[10px]"
             }`}
           >
             <User size={isScrolled ? 10 : 12} />
-            Acceso
+            Ingresar al Templo
           </Link>
 
           {/* ICONO DE MENÚ: Solo visible en móviles (lg:hidden) */}

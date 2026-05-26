@@ -40,7 +40,7 @@ export async function login(username: string, password: string) {
       path: "/",
     });
 
-    return { success: true };
+    return { success: true, role: user.role };
   } catch (error) {
     console.error("Error detallado en login:", error);
     return { error: "Error en el servidor" };
