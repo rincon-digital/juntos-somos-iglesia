@@ -1,5 +1,5 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -16,6 +16,7 @@ const nextConfig = {
     },
   },
   typescript: {
+    // Evita que Next.js intente validar tipos o instalar @types/node
     ignoreBuildErrors: true,
   },
 };
