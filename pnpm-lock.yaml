@@ -14,9 +14,9 @@ importers:
       '@prisma/client':
         specifier: ^7.3.0
         version: 7.3.0(prisma@7.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3)
-      '@studio-freight/lenis':
-        specifier: ^1.0.42
-        version: 1.0.42
+      '@tailwindcss/postcss':
+        specifier: ^4
+        version: 4.1.18
       '@tiptap/extension-placeholder':
         specifier: ^3.20.0
         version: 3.20.0(@tiptap/extensions@3.20.0(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))(@tiptap/pm@3.20.0))
@@ -89,10 +89,10 @@ importers:
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
-    devDependencies:
-      '@tailwindcss/postcss':
+      tailwindcss:
         specifier: ^4
         version: 4.1.18
+    devDependencies:
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0
@@ -120,9 +120,6 @@ importers:
       prisma:
         specifier: ^7.3.0
         version: 7.3.0(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      tailwindcss:
-        specifier: ^4
-        version: 4.1.18
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -808,10 +805,6 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
-
-  '@studio-freight/lenis@1.0.42':
-    resolution: {integrity: sha512-HJAGf2DeM+BTvKzHv752z6Z7zy6bA643nZM7W88Ft9tnw2GsJSp6iJ+3cekjyMIWH+cloL2U9X82dKXgdU8kPg==}
-    deprecated: 'The ''@studio-freight/lenis'' package has been renamed to ''lenis''. Please update your dependencies: npm install lenis and visit the documentation: https://www.npmjs.com/package/lenis'
 
   '@svta/cml-608@1.0.1':
     resolution: {integrity: sha512-Y/Ier9VPUSOBnf0bJqdDyTlPrt4dDB+jk5mYHa1bnD2kcRl8qn7KkW3PRuj4w1aVN+BS2eHmsLxodt7P2hylUg==}
@@ -3858,8 +3851,6 @@ snapshots:
   '@rtsao/scc@1.1.0': {}
 
   '@standard-schema/spec@1.1.0': {}
-
-  '@studio-freight/lenis@1.0.42': {}
 
   '@svta/cml-608@1.0.1': {}
 
