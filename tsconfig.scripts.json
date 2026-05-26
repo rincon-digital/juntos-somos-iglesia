@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "target": "ES2019",
+        "noEmit": false,
+        "outDir": "dist-scripts",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "isolatedModules": false
+    },
+    "include": [
+        "lib/script/admin.ts",
+        "lib/prisma.ts"
+    ]
+}

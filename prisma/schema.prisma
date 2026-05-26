@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  fullName  String
+  password  String   
+  role      Role     @default(user)
+  rank      Rank     @default(concurre)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile            Profile?
+  courseRegistration CourseRegistration[]
+  examAnswers        ExamAnswers[]
+  videoProgress      UserVideoProgress[] 
+  
+  // Relaciones de autoría
+  articles           Article[]
+  testimonies        Testimony[]
+  managedCourses     CourseManager[] 
+  createdVideos      CourseVideo[]     // NUEVO: Videos subidos por este usuario
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  dni       String   @unique
+  phone     String
+  address   String
+  userId    String   @unique // Garantiza que un perfil pertenezca a un solo usuario
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id             String   @id @default(uuid())
+  name           String
+  description    String
+  accessCode     String   
+  quotaLimit     Int
+  openEnrollment DateTime
+  deadline       DateTime
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  managers           CourseManager[]
+  courseRegistration CourseRegistration[]
+  video              CourseVideo[]
+}
+
+model CourseManager {
+  id        String   @id @default(uuid())
+  courseId  String
+  userId    String
+  // Opcional: Puedes añadir un campo 'permissions' o 'type' 
+  // para diferenciar entre "Dueño" y "Ayudante"
+  roleInCourse RoleInCourse @default(editor) 
+
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId]) // Evita que un usuario sea manager dos veces del mismo curso
+}
+
+
+
+model CourseRegistration {
+  id        String   @id @default(uuid())
+  courseId  String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+
+  @@unique([courseId, userId])
+}
+
+model CourseVideo {
+  id        String   @id @default(uuid())
+  title     String
+  order     Int      
+  videoId   String
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+ 
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+
+  course        Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videoReview   VideoReview[]
+  videoProgress UserVideoProgress[]
+
+  @@unique([courseId, order]) 
+}
+
+model VideoReview {
+  id            String         @id @default(uuid())
+  question      String
+  videoId       String
+  optionA       String
+  optionB       String
+  optionC       String
+  correctOption QuestionOption
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  video       CourseVideo   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  examAnswers ExamAnswers[]
+}
+
+model ExamAnswers {
+  id         String         @id @default(uuid())
+  questionId String
+  userId     String
+  response   QuestionOption
+  isCorrect  Boolean        @default(false)
+  isArchived Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  question VideoReview @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserVideoProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  videoId     String
+  isCompleted Boolean  @default(false) 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video CourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId]) 
+}
+
+enum QuestionOption {
+  A
+  B
+  C
+}
+
+enum Role {
+  superadmin
+  admin
+  user
+}
+
+enum Rank {
+  concurre
+  miembro
+}
+
+enum RoleInCourse {
+  owner
+  editor
+}
+
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String?  @unique
+  content     String   @db.Text 
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+
+model Testimony {
+  id          String   @id @default(uuid())
+  content     String   @db.Text 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}

@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Ocultar scrollbar para Chrome, Safari y Opera */
+::-webkit-scrollbar {
+  display: none;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Ocultar scrollbar para IE, Edge y Firefox */
+html {
+  ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dentro de editorStyles en RichTextEditor.tsx */
+.tiptap-editor ul {
+  list-style-type: none !important;
+  padding-left: 1.5rem !important;
+  margin: 1rem 0 !important;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.tiptap-editor ul li {
+  position: relative;
+  padding-left: 0.5rem;
+}
+
+.tiptap-editor ul li::before {
+  content: "—" !important;
+  position: absolute;
+  left: -1.2rem;
+  color: #ff6b00 !important;
+  font-weight: 900;
+}
+
+.tiptap-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 1rem 0 !important;
+}
+
+.tiptap-editor ol li::marker {
+  color: #ff6b00 !important;
+  font-weight: 900;
 }
