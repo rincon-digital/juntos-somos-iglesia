@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jsioficial.com"),
+  metadataBase: new URL("https://www.juntossomosiglesia.com"),
 
   title: {
     default: "Juntos Somos Iglesia | Pr. Ageu Da Rosa",
