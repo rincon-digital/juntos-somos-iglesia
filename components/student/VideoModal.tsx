@@ -171,7 +171,7 @@ export default function VideoModal({ video, onClose }: any) {
           </button>
         </div>
 
-        <div className="w-full aspect-video bg-black relative">
+        <div className={`w-full bg-black relative transition-all duration-500 ${step === "video" ? "aspect-video" : "min-h-[85vh] md:min-h-0 md:aspect-video"}`}>
           {/* ── STEP: VIDEO ── */}
           {/* Usamos display dinámico para no desmontar el iframe nunca */}
           <div
@@ -277,9 +277,9 @@ export default function VideoModal({ video, onClose }: any) {
 
           {/* ── STEP: QUIZ ── */}
           {step === "quiz" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-10 md:p-20 gap-8">
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-20 gap-6 md:gap-8 overflow-y-auto">
               {/* Progreso */}
-              <div className="w-full flex items-center gap-2">
+              <div className="w-full flex items-center gap-2 max-w-2xl">
                 {questions.map((_: any, i: number) => (
                   <div
                     key={i}
@@ -306,11 +306,11 @@ export default function VideoModal({ video, onClose }: any) {
                   <p className="text-xs uppercase tracking-widest text-white/30 font-black">
                     Pregunta {currentQuestionIndex + 1} de {questions.length}
                   </p>
-                  <h3 className="text-xl md:text-2xl font-black uppercase italic text-white text-center">
+                  <h3 className="text-lg md:text-2xl font-black uppercase italic text-white text-center px-2">
                     {questions[currentQuestionIndex]?.question}
                   </h3>
 
-                  <div className="w-full grid grid-cols-1 gap-3 mt-2">
+                  <div className="w-full max-w-2xl grid grid-cols-1 gap-3 mt-2">
                     {(["A", "B", "C"] as const).map((opt) => {
                       const label =
                         opt === "A"
@@ -324,7 +324,7 @@ export default function VideoModal({ video, onClose }: any) {
                           key={opt}
                           disabled={isSaving}
                           onClick={() => handleQuizAnswer(opt)}
-                          className="w-full flex items-center gap-4 bg-white/5 border border-white/10 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10 text-white rounded-2xl px-6 py-4 font-bold text-sm transition-all disabled:opacity-50"
+                          className="w-full flex items-center gap-4 bg-white/5 border border-white/10 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10 text-white rounded-xl md:rounded-2xl px-5 py-3 md:px-6 md:py-4 font-bold text-xs md:text-sm transition-all disabled:opacity-50 text-left"
                         >
                           <span className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center font-black text-xs shrink-0">
                             {opt}
@@ -355,14 +355,14 @@ export default function VideoModal({ video, onClose }: any) {
                   setShowEndScreen(false);
                   setIsVideoEnded(false);
 
-                  // Reiniciamos y damos play usando la instancia viva de la API
-                  if (
-                    playerRef.current &&
-                    typeof playerRef.current.seekTo === "function"
-                  ) {
-                    playerRef.current.seekTo(0);
-                    playerRef.current.playVideo();
-                  }
+                  setTimeout(() => {
+                    if (
+                      playerRef.current &&
+                      typeof playerRef.current.loadVideoById === "function"
+                    ) {
+                      playerRef.current.loadVideoById(video.videoId);
+                    }
+                  }, 300);
                 }}
                 className="bg-yellow-400 text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all"
               >
