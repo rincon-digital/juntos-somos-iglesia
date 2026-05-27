@@ -9,7 +9,7 @@ const ADMIN_PATH = "/admin";
 const STUDENT_PATH = "/dashboard-estudiante";
 const LOGIN_PATH = "/login";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get("session_token")?.value;
   const { pathname } = request.nextUrl;
 
@@ -57,17 +57,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-
-  // PREVENIR CACHÉ DE HOSTINGER PARA RUTAS PROTEGIDAS
-  if (pathname.startsWith(ADMIN_PATH) || pathname.startsWith(STUDENT_PATH)) {
-    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    response.headers.set("Pragma", "no-cache");
-    response.headers.set("Expires", "0");
-    response.headers.set("X-LiteSpeed-Cache-Control", "no-cache");
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
 // 4. CONFIGURACIÓN DEL MATCHER
