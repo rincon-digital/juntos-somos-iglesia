@@ -39,10 +39,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Ageu Da Rosa" }],
   creator: "Creative Studio",
+
   icons: {
-    icon: "/logo.webp",
-    apple: "/logo.webp",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
+
   openGraph: {
     type: "website",
     locale: "es_ES",
@@ -52,7 +55,7 @@ export const metadata: Metadata = {
     siteName: "Juntos Somos Iglesia",
     images: [
       {
-        url: "/og-image.webp", // Ruta relativa que Next.js ahora resolverá con metadataBase
+        url: "/og-image.webp",
         width: 1200,
         height: 630,
         alt: "Juntos Somos Iglesia Logo",

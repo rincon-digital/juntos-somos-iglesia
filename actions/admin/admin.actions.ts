@@ -75,3 +75,98 @@ export async function createAdmin(
     };
   }
 }
+
+export async function getAdminProfileData() {
+  try {
+    const session = await validateSessionUser(Role.admin);
+    if (!session) return null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      include: { profile: true },
+    });
+
+    if (!user) return null;
+
+    return {
+      fullName: user.fullName,
+      username: user.username,
+      phone: user.profile?.phone || "",
+      address: user.profile?.address || "",
+    };
+  } catch (error) {
+    console.error("Error fetching admin profile:", error);
+    return null;
+  }
+}
+
+export async function updateAdminProfile(data: {
+  fullName: string;
+  username: string;
+}) {
+  try {
+    const session = await validateSessionUser(Role.admin);
+    if (!session) return { ok: false, message: "No autorizado." };
+
+    const cleanUsername = data.username.trim().toLowerCase();
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return { ok: false, message: "El nombre de usuario debe tener al menos 3 caracteres." };
+    }
+
+    if (!data.fullName.trim()) {
+      return { ok: false, message: "El nombre completo es obligatorio." };
+    }
+
+    // Check if username exists and belongs to someone else
+    const existingUser = await prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    if (existingUser && existingUser.id !== session.userId) {
+      const suggestions = await getUsernameSuggestions(cleanUsername);
+      return {
+        ok: false,
+        message: "El nombre de usuario ya está en uso.",
+        suggestions,
+      };
+    }
+
+    // Update User 
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: {
+        fullName: data.fullName.trim(),
+        username: cleanUsername,
+      },
+    });
+
+    return { ok: true, message: "Perfil actualizado con éxito." };
+  } catch (error: any) {
+    console.error("Error updating admin profile:", error);
+    return { ok: false, message: "Error inesperado al actualizar el perfil." };
+  }
+}
+
+export async function checkUsernameAvailability(username: string) {
+  try {
+    const session = await validateSessionUser(Role.admin);
+    if (!session) return { available: false, suggestions: [] };
+
+    const cleanUsername = username.trim().toLowerCase();
+    if (cleanUsername.length < 3) return { available: false, suggestions: [] };
+
+    const existingUser = await prisma.user.findUnique({
+      where: { username: cleanUsername },
+    });
+
+    if (existingUser && existingUser.id !== session.userId) {
+      const suggestions = await getUsernameSuggestions(cleanUsername);
+      return { available: false, suggestions };
+    }
+
+    return { available: true, suggestions: [] };
+  } catch (error) {
+    return { available: false, suggestions: [] };
+  }
+}
+

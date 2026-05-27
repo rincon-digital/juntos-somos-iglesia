@@ -55,7 +55,7 @@ export default function Cursos({
   }, [selectedCurso, showRegister, onModalChange]);
 
   return (
-    <section className="py-24 bg-transparent text-white px-6">
+    <section id="cursos" className="py-24 bg-transparent text-white px-6">
       <Toaster position="bottom-right" richColors theme="dark" style={{ zIndex: 9999 }} />
       <div className="max-w-7xl mx-auto">
         <header className="mb-16">

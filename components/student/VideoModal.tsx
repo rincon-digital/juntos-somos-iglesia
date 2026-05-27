@@ -7,7 +7,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Play,
-  Pause,
+  Loader2,
 } from "lucide-react";
 import { userEvaluations } from "@/actions/user_course/evaluations/user.evaluations";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ export default function VideoModal({ video, onClose }: any) {
   const [showEndScreen, setShowEndScreen] = useState<boolean>(false);
   const playerRef = useRef<any>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -31,16 +32,23 @@ export default function VideoModal({ video, onClose }: any) {
 
     const initPlayer = () => {
       if (playerRef.current) return;
-      
+
       playerRef.current = new (window as any).YT.Player("yt-player", {
         events: {
           onReady: () => {
             setIsPlayerReady(true);
           },
           onStateChange: (event: any) => {
-            // 1 = playing, 2 = paused, 0 = ended
+            // 1 = playing, 2 = paused, 0 = ended, 3 = buffering
             if (event.data === 1) setIsPlaying(true);
             if (event.data === 2) setIsPlaying(false);
+
+            if (event.data === 3) {
+              setIsBuffering(true);
+            } else {
+              setIsBuffering(false);
+            }
+
             if (event.data === 0) {
               setIsVideoEnded(true);
               setShowEndScreen(true);
@@ -61,7 +69,7 @@ export default function VideoModal({ video, onClose }: any) {
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
       }
-      
+
       const previousOnReady = (window as any).onYouTubeIframeAPIReady;
       (window as any).onYouTubeIframeAPIReady = () => {
         if (previousOnReady) previousOnReady();
@@ -84,7 +92,9 @@ export default function VideoModal({ video, onClose }: any) {
   const startingIndex = useMemo(() => {
     const pendingIndex = questions.findIndex(
       (q: any) =>
-        !q.examAnswers?.some((a: any) => a.response === q.correctOption && !a.isArchived),
+        !q.examAnswers?.some(
+          (a: any) => a.response === q.correctOption && !a.isArchived,
+        ),
     );
     return pendingIndex !== -1 ? pendingIndex : 0;
   }, [questions]);
@@ -97,7 +107,11 @@ export default function VideoModal({ video, onClose }: any) {
   >("video");
 
   const handlePlayPause = () => {
-    if (!playerRef.current || !isPlayerReady || typeof playerRef.current.playVideo !== 'function') {
+    if (
+      !playerRef.current ||
+      !isPlayerReady ||
+      typeof playerRef.current.playVideo !== "function"
+    ) {
       console.warn("Reproductor no listo todavía.");
       return;
     }
@@ -159,99 +173,107 @@ export default function VideoModal({ video, onClose }: any) {
 
         <div className="w-full aspect-video bg-black relative">
           {/* ── STEP: VIDEO ── */}
-          {step === "video" && (
-            <div className="absolute inset-0 w-full h-full">
-              {video?.videoId ? (
-                <>
-                  {/* iframe sin controles */}
-                  <iframe
-                    id="yt-player"
-                    className="absolute top-0 left-0 w-full h-full"
-                    src={`https://www.youtube.com/embed/${video.videoId.trim()}?rel=0&modestbranding=1&enablejsapi=1&controls=0&disablekb=1&fs=0`}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
+          {/* Usamos display dinámico para no desmontar el iframe nunca */}
+          <div
+            className={`absolute inset-0 w-full h-full ${step === "video" ? "block" : "hidden"}`}
+          >
+            {video?.videoId ? (
+              <>
+                {/* iframe sin controles */}
+                <iframe
+                  id="yt-player"
+                  className="absolute top-0 left-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${video.videoId.trim()}?rel=0&modestbranding=1&enablejsapi=1&controls=0&disablekb=1&fs=0`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
 
-                  {/* Overlay que bloquea click directo al iframe */}
-                  {!showEndScreen && (
-                    <div
-                      className="absolute inset-0 z-10 cursor-pointer"
-                      onClick={handlePlayPause}
-                    >
-                      {/* Título */}
-                      <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 bg-gradient-to-t from-black via-black/40 to-transparent flex justify-between items-end">
-                        <h2 className="text-3xl md:text-5xl font-black uppercase italic text-white tracking-tighter drop-shadow-lg">
-                          {video.title}
-                        </h2>
-                      </div>
+                {/* Overlay que bloquea click directo al iframe */}
+                {!showEndScreen && (
+                  <div
+                    className="absolute inset-0 z-10 cursor-pointer"
+                    onClick={handlePlayPause}
+                  >
+                    {/* Título */}
+                    <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12 bg-gradient-to-t from-black via-black/40 to-transparent flex justify-between items-end">
+                      <h2 className="text-3xl md:text-5xl font-black uppercase italic text-white tracking-tighter drop-shadow-lg">
+                        {video.title}
+                      </h2>
+                    </div>
 
-                      {/* Botón play/pause centrado */}
-                      <AnimatePresence>
-                        {!isPlaying && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="absolute inset-0 flex items-center justify-center"
-                          >
-                            <div className="w-20 h-20 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-2xl">
+                    {/* Botón play/pause centrado */}
+                    <AnimatePresence>
+                      {(!isPlaying || isBuffering || !isPlayerReady) && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="absolute inset-0 flex items-center justify-center"
+                        >
+                          <div className="w-20 h-20 bg-[#FF6B00] rounded-full flex items-center justify-center shadow-2xl">
+                            {!isPlayerReady || isBuffering ? (
+                              <Loader2
+                                size={32}
+                                className="text-black animate-spin"
+                              />
+                            ) : (
                               <Play
                                 size={32}
                                 className="text-black fill-black ml-1"
                               />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Pantalla final cuando termina el video */}
+                <AnimatePresence>
+                  {showEndScreen && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute inset-0 z-20 bg-black/90 flex flex-col items-center justify-center gap-6 p-10"
+                    >
+                      <CheckCircle2 size={56} className="text-[#FF6B00]" />
+                      <h3 className="text-3xl font-black uppercase italic text-white text-center">
+                        ¡Clase Finalizada!
+                      </h3>
+                      <p className="text-white/50 text-sm uppercase tracking-widest text-center">
+                        {questions.length > 0
+                          ? "Ahora completá la evaluación para continuar"
+                          : "¡Muy bien! Ya podés continuar con la siguiente clase"}
+                      </p>
+
+                      {questions.length > 0 ? (
+                        <button
+                          onClick={() => setStep("quiz")}
+                          className="bg-[#FF6B00] text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all flex items-center gap-3"
+                        >
+                          Realizar Evaluación <ArrowRight size={18} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setStep("completed");
+                            setTimeout(() => onClose(true), 2000);
+                          }}
+                          className="bg-white text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-400 transition-all flex items-center gap-3"
+                        >
+                          Continuar <CheckCircle2 size={18} />
+                        </button>
+                      )}
+                    </motion.div>
                   )}
-
-                  {/* Pantalla final cuando termina el video */}
-                  <AnimatePresence>
-                    {showEndScreen && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 z-20 bg-black/90 flex flex-col items-center justify-center gap-6 p-10"
-                      >
-                        <CheckCircle2 size={56} className="text-[#FF6B00]" />
-                        <h3 className="text-3xl font-black uppercase italic text-white text-center">
-                          ¡Clase Finalizada!
-                        </h3>
-                        <p className="text-white/50 text-sm uppercase tracking-widest text-center">
-                          {questions.length > 0
-                            ? "Ahora completá la evaluación para continuar"
-                            : "¡Muy bien! Ya podés continuar con la siguiente clase"}
-                        </p>
-
-                        {questions.length > 0 ? (
-                          <button
-                            onClick={() => setStep("quiz")}
-                            className="bg-[#FF6B00] text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all flex items-center gap-3"
-                          >
-                            Realizar Evaluación <ArrowRight size={18} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setStep("completed");
-                              setTimeout(() => onClose(true), 2000);
-                            }}
-                            className="bg-white text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-400 transition-all flex items-center gap-3"
-                          >
-                            Continuar <CheckCircle2 size={18} />
-                          </button>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-white/20 uppercase font-black text-xs">
-                  Error: No se encontró el ID de YouTube
-                </div>
-              )}
-            </div>
-          )}
+                </AnimatePresence>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-white/20 uppercase font-black text-xs">
+                Error: No se encontró el ID de YouTube
+              </div>
+            )}
+          </div>
 
           {/* ── STEP: QUIZ ── */}
           {step === "quiz" && (
@@ -332,7 +354,12 @@ export default function VideoModal({ video, onClose }: any) {
                   setStep("video");
                   setShowEndScreen(false);
                   setIsVideoEnded(false);
-                  if (playerRef.current && typeof playerRef.current.seekTo === "function") {
+
+                  // Reiniciamos y damos play usando la instancia viva de la API
+                  if (
+                    playerRef.current &&
+                    typeof playerRef.current.seekTo === "function"
+                  ) {
                     playerRef.current.seekTo(0);
                     playerRef.current.playVideo();
                   }
