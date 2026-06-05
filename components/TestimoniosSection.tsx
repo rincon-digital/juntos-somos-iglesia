@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Quote, X, ArrowRight, MessageSquareQuote } from "lucide-react"; // Importado MessageSquareQuote para el icono vacío
+import { Quote, X, ArrowRight, MessageSquareQuote } from "lucide-react";
 import { getTestimonies } from "@/actions/testimony/testimony";
 
 interface TestimoniosProps {
@@ -54,8 +54,6 @@ export default function TestimoniosSection({
 
   return (
     <section className="relative w-full py-24 md:py-32 px-4 md:px-10 overflow-hidden bg-[#050505] z-20">
-      {/* ... (Decoración y Encabezado se mantienen igual) ... */}
-
       {/* CONTENIDO DE TESTIMONIOS */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -78,7 +76,6 @@ export default function TestimoniosSection({
           ))}
         </div>
       ) : (
-        /* ESTADO VACÍO (ESTILO UNIFICADO) */
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -97,7 +94,7 @@ export default function TestimoniosSection({
         </motion.div>
       )}
 
-      {/* ================= MODAL TESTIMONIO (Sin cambios) ================= */}
+      {/* MODAL */}
       <AnimatePresence>
         {selectedTestimonio && (
           <motion.div
@@ -105,7 +102,9 @@ export default function TestimoniosSection({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedTestimonio(null)}
-            className="fixed inset-0 z-[5000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-12 overscroll-none"
+            // FIX: eliminado backdrop-blur-sm → causa GPU glitch en Mali (A13/A14)
+            // Compensado con mayor opacidad: bg-black/80 → bg-black/90
+            className="fixed inset-0 z-[5000] bg-black/90 flex items-center justify-center p-4 sm:p-6 md:p-12 overscroll-none"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -113,11 +112,13 @@ export default function TestimoniosSection({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col max-h-[85vh]"
             >
               <button
                 onClick={() => setSelectedTestimonio(null)}
-                className="absolute top-6 right-6 z-[6000] w-10 h-10 bg-black/40 hover:bg-[#FF6B00] backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center transition-all duration-300 group"
+                // FIX: eliminado backdrop-blur-md → mismo problema de GPU
+                // Reemplazado con bg-[#1a1a1a] sólido
+                className="absolute top-6 right-6 z-[6000] w-10 h-10 bg-[#1a1a1a] hover:bg-[#FF6B00] border border-white/10 rounded-full flex items-center justify-center transition-all duration-300 group"
               >
                 <X
                   size={20}
@@ -133,7 +134,7 @@ export default function TestimoniosSection({
                 <Quote className="text-white/5 w-24 h-24 absolute top-8 right-8 -rotate-12 pointer-events-none" />
 
                 <div className="flex items-center gap-6 mb-10 pb-10 border-b border-white/10 pr-12">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#FF6B00]/30 flex items-center justify-center font-black text-[#FF6B00] text-3xl uppercase shadow-inner shrink-0">
+                  <div className="w-20 h-20 rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/30 flex items-center justify-center font-black text-[#FF6B00] text-3xl uppercase shrink-0">
                     {selectedTestimonio.author?.fullName?.charAt(0) || "F"}
                   </div>
                   <div>
@@ -160,7 +161,6 @@ export default function TestimoniosSection({
   );
 }
 
-// COMPONENTE TARJETA (Se mantiene igual...)
 function TestimonioCard({ testimonio, index, onClick }: any) {
   return (
     <motion.div
@@ -168,7 +168,8 @@ function TestimonioCard({ testimonio, index, onClick }: any) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="relative group cursor-pointer bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden hover:bg-white/[0.04] hover:border-[#FF6B00]/30 transition-all duration-500 shadow-2xl flex flex-col h-[350px]"
+      // FIX: eliminado shadow-2xl → puede forzar compositing layer en Mali GPU
+      className="relative group cursor-pointer bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden hover:bg-white/[0.04] hover:border-[#FF6B00]/30 transition-all duration-500 flex flex-col h-[350px]"
       onClick={onClick}
     >
       <div className="p-8 md:p-10 flex flex-col h-full relative z-10">
@@ -186,7 +187,8 @@ function TestimonioCard({ testimonio, index, onClick }: any) {
           />
         </div>
         <div className="flex items-center gap-4 border-t border-white/10 pt-6 mt-auto">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-white/10 flex items-center justify-center font-black text-[#FF6B00] text-lg uppercase shadow-inner shrink-0">
+          {/* FIX: reemplazado bg-gradient-to-br con color sólido equivalente */}
+          <div className="w-12 h-12 rounded-full bg-[#FF6B00]/20 border border-white/10 flex items-center justify-center font-black text-[#FF6B00] text-lg uppercase shrink-0">
             {testimonio.author?.fullName?.charAt(0) || "F"}
           </div>
           <div className="min-w-0">
