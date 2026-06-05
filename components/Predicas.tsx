@@ -21,7 +21,7 @@ const PREDICAS_LISTA: PredicaItem[] = [
     dia: "Lunes",
     titulo: "Cursos de Discipulado",
     detalle: "Dedicado a cursos de discipulado para todas las edades.",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
+    // No tiene horario definido
   },
   {
     dia: "Martes",
@@ -29,7 +29,6 @@ const PREDICAS_LISTA: PredicaItem[] = [
     detalle:
       "Oramos por tus emprendimientos y negocios. Ven por tu puertas abiertas.",
     horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
   },
   {
     dia: "Miércoles",
@@ -37,27 +36,25 @@ const PREDICAS_LISTA: PredicaItem[] = [
     detalle:
       "Nada es imposible para Dios. Una oración de fe puede cambiarlo todo hoy.",
     horario: "19:30 HS",
-    nota: "Trae tu botella de agua para ser ungida. (Mañana: Cultos de ayuno 07:00 y 09:00 HS)",
+    nota: "Trae tu botella de agua para ser ungida",
   },
   {
     dia: "Jueves",
     titulo: "Sanados por su Poder",
     detalle: "Creemos en el poder sanador de Jesús para tu cuerpo y mente.",
     horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
   },
   {
     dia: "Viernes",
     titulo: "Rompiendo Cadenas",
     detalle: "Rompemos toda atadura espiritual en el nombre de Jesús.",
     horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
   },
   {
     dia: "Sábado",
     titulo: "Legacy",
     detalle: "Grupo de Jovenes & Las Hormiguitas",
-    horario: "15:00 HS - 17:00 HS",
+    horario: " 15:00 HS - 17:00 HS",
     nota: "Primer horario para los jovenes y el segundo para los niños",
   },
   {
@@ -67,6 +64,7 @@ const PREDICAS_LISTA: PredicaItem[] = [
     horario: "19:30 HS",
   },
 ];
+
 export default function Predicas() {
   const [selected, setSelected] = useState<PredicaItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
