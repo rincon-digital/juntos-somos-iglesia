@@ -152,7 +152,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="glass-card absolute bottom-10 left-6 md:left-10 bg-black/40 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] max-w-sm z-30 text-left">
+            <div className="glass-card absolute bottom-10 left-6 md:left-10 bg-[#050505]/95 md:bg-black/40 backdrop-blur-none md:backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] max-w-sm z-30 text-left">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/50">

@@ -58,7 +58,7 @@ export default function AdminHeader() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex justify-between items-center w-full max-w-5xl bg-black/60 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl shadow-2xl transition-all duration-500"
+          className="flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl shadow-2xl transition-all duration-500"
         >
           {/* LOGO */}
           <div className="flex items-center gap-3 group">
@@ -136,7 +136,7 @@ export default function AdminHeader() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed inset-0 top-24 z-50 mx-4 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+            className="lg:hidden fixed inset-0 top-24 z-50 mx-4 bg-[#050505] backdrop-blur-none border border-white/10 rounded-2xl overflow-hidden"
             style={{ position: 'fixed', top: '5rem' }}
           >
             <div className="p-2 space-y-1 mt-2">

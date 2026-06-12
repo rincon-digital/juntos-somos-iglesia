@@ -51,7 +51,7 @@ export default function Navbar() {
       }`}
     >
       <nav
-        className={`flex justify-between items-center w-full max-w-5xl bg-black/60 backdrop-blur-xl border border-white/10 transition-all duration-500 shadow-2xl ${
+        className={`flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 transition-all duration-500 shadow-2xl ${
           isScrolled
             ? "px-5 py-2 rounded-full max-w-3xl border-white/20"
             : "px-8 py-4 rounded-[2rem] md:rounded-full"
