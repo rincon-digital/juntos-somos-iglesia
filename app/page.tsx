@@ -133,7 +133,7 @@ export default function Page() {
             </div>
 
             {/* TARJETAS RESPONSIVAS */}
-            <div className="glass-card absolute top-10 right-10 hidden lg:flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-full px-6 z-30">
+            <div className="glass-card absolute top-28 right-10 hidden lg:flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 p-4 rounded-full px-6 z-30">
               <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-[#FF6B00]">
                 <Image
                   src="/pastor.webp"
@@ -160,10 +160,10 @@ export default function Page() {
                 </span>
               </div>
               <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter mb-2 leading-none">
-                Martes a Viernes
+                Lunes a Domingo
               </h3>
-              <p className="text-[#FF6B00] font-mono text-2xl font-bold italic">
-                19:00 — 21:30 HS
+              <p className="text-[#FF6B00] font-mono text-xl md:text-2xl font-bold italic">
+                07:00 & 19:30 HS
               </p>
             </div>
           </div>

@@ -54,8 +54,21 @@ export default function TestimoniosSection({
 
   return (
     <section className="relative w-full py-24 md:py-32 px-4 md:px-10 overflow-hidden bg-[#050505] z-20">
-      {/* ... (Decoración y Encabezado se mantienen igual) ... */}
-
+      {/* ENCABEZADO DE TESTIMONIOS */}
+      <div className="max-w-4xl mx-auto text-center mb-16 md:mb-24 relative z-10">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <MessageSquareQuote className="text-[#FF6B00]" size={16} />
+          <span className="text-[#FF6B00] font-mono text-[10px] tracking-[0.3em] uppercase font-black">
+            Nuestra Comunidad
+          </span>
+        </div>
+        <h2 className="text-[10vw] md:text-[6vw] font-black uppercase leading-[0.85] tracking-tighter italic mb-6">
+          VIDAS <span className="text-white/10 outline-text">TRANSFORMADAS</span>
+        </h2>
+        <p className="text-white/50 text-sm md:text-base max-w-2xl mx-auto font-medium">
+          Descubre lo que Dios está haciendo en el corazón de nuestra iglesia a través de experiencias reales.
+        </p>
+      </div>
       {/* CONTENIDO DE TESTIMONIOS */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
