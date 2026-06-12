@@ -19,39 +19,33 @@ interface PredicaItem {
 const PREDICAS_LISTA: PredicaItem[] = [
   {
     dia: "Lunes",
-    titulo: "Cursos de Discipulado",
-    detalle: "Dedicado a cursos de discipulado para todas las edades.",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
+    titulo: "Ayuno",
+    detalle: "Comienza tu semana en búsqueda espiritual.",
+    horario: "07:00 AM",
   },
   {
     dia: "Martes",
-    titulo: "Despegue Financiero",
-    detalle:
-      "Oramos por tus emprendimientos y negocios. Ven por tu puertas abiertas.",
-    horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
+    titulo: "Milagros de Jesucristo",
+    detalle: "Oramos por tus necesidades creyendo en milagros.",
+    horario: "07:00 AM y 19:30 HS",
   },
   {
     dia: "Miércoles",
     titulo: "Milagros Urgentes",
-    detalle:
-      "Nada es imposible para Dios. Una oración de fe puede cambiarlo todo hoy.",
-    horario: "19:30 HS",
-    nota: "Trae tu botella de agua para ser ungida. (Mañana: Cultos de ayuno 07:00 y 09:00 HS)",
+    detalle: "Nada es imposible para Dios. Una oración de fe puede cambiarlo todo hoy.",
+    horario: "07:00 AM y 19:30 HS",
   },
   {
     dia: "Jueves",
-    titulo: "Sanados por su Poder",
-    detalle: "Creemos en el poder sanador de Jesús para tu cuerpo y mente.",
-    horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
+    titulo: "Y todos fueron llenos del Espíritu Santo",
+    detalle: "Buscando la llenura y presencia del Espíritu Santo.",
+    horario: "07:00 AM y 19:30 HS",
   },
   {
     dia: "Viernes",
     titulo: "Rompiendo Cadenas",
     detalle: "Rompemos toda atadura espiritual en el nombre de Jesús.",
-    horario: "19:30 HS",
-    nota: "Cultos de ayuno por la mañana: 07:00 HS y 09:00 HS.",
+    horario: "07:00 AM y 19:30 HS",
   },
   {
     dia: "Sábado",

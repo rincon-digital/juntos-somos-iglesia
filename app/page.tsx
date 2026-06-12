@@ -152,35 +152,19 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="glass-card absolute bottom-4 md:bottom-10 left-6 md:left-10 bg-[#050505]/95 md:bg-black/40 backdrop-blur-none md:backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] max-w-xs md:max-w-sm z-30 text-left">
+            <div className="glass-card absolute bottom-10 left-6 md:left-10 bg-[#050505]/95 md:bg-black/40 backdrop-blur-none md:backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] max-w-sm z-30 text-left">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/50">
-                  Paso de fe
+                  Próxima Cita
                 </span>
               </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col">
-                  <span className="text-[#FF6B00] text-[9px] font-black uppercase tracking-widest">Lunes</span>
-                  <span className="text-white font-bold text-xs md:text-sm">Ayuno 7 AM</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[#FF6B00] text-[9px] font-black uppercase tracking-widest">Martes</span>
-                  <span className="text-white font-bold text-xs md:text-sm">Milagros de Jesucristo (7 AM y 19:30 HS)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[#FF6B00] text-[9px] font-black uppercase tracking-widest">Miércoles</span>
-                  <span className="text-white font-bold text-xs md:text-sm">Milagros urgentes (7 AM y 19:30 HS)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[#FF6B00] text-[9px] font-black uppercase tracking-widest">Jueves</span>
-                  <span className="text-white font-bold text-xs md:text-sm">Todos fueron llenos del E. Santo (7 AM y 19:30 HS)</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[#FF6B00] text-[9px] font-black uppercase tracking-widest">Viernes</span>
-                  <span className="text-white font-bold text-xs md:text-sm">Rompiendo cadenas (7 AM y 19:30 HS)</span>
-                </div>
-              </div>
+              <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter mb-2 leading-none">
+                Martes a Viernes
+              </h3>
+              <p className="text-[#FF6B00] font-mono text-2xl font-bold italic">
+                19:00 — 21:30 HS
+              </p>
             </div>
           </div>
         </section>
