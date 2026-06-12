@@ -226,7 +226,7 @@ export default function AdminStatsPage() {
       initial="hidden"
       animate="visible"
       variants={containerVars}
-      className="bg-[#050505] min-h-screen p-4 md:p-8"
+      className="bg-[#050505] min-h-screen p-4 md:p-8 transform-gpu"
     >
       <div className="max-w-[1400px] mx-auto space-y-6">
         <motion.div variants={itemVars}>
@@ -236,7 +236,7 @@ export default function AdminStatsPage() {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <motion.div variants={itemVars} className="lg:col-span-7 bg-[#0a0a0a] rounded-3xl p-6 md:p-10 relative overflow-hidden">
+          <motion.div variants={itemVars} className="lg:col-span-7 bg-[#0a0a0a] rounded-3xl p-6 md:p-10 relative overflow-hidden transform-gpu">
             <div className="absolute top-0 left-0 w-full h-1 bg-[#FF6B00]" />
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-8">
@@ -280,7 +280,7 @@ export default function AdminStatsPage() {
             </div>
           </motion.div>
 
-          <motion.div variants={itemVars} className="lg:col-span-5 bg-[#0a0a0a] rounded-3xl p-6 md:p-10 relative overflow-hidden flex flex-col justify-center">
+          <motion.div variants={itemVars} className="lg:col-span-5 bg-[#0a0a0a] rounded-3xl p-6 md:p-10 relative overflow-hidden flex flex-col justify-center transform-gpu">
             <div className="absolute inset-0 opacity-5">
               <div className="absolute top-4 right-4 font-black text-[120px] text-white leading-none select-none">"</div>
             </div>
