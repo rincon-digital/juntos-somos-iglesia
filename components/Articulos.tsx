@@ -26,9 +26,8 @@ export default function Articulos({ onModalChange, limit }: ArticulosProps) {
   }, [limit]);
 
   const getPreviewText = (html: string) => {
-    if (!html) return "";
     return html
-      .replace(/<\/h1>|<\/h2>|<\/p>|<\/li>/g, " ")
+      ?.replace(/<\/h1>|<\/h2>|<\/p>|<\/li>/g, " ")
       .replace(/<[^>]*>/g, "")
       .trim();
   };
@@ -146,15 +145,8 @@ function ArticleCard({ article, idx, previewText }: any) {
             <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-[1.1] text-white group-hover:text-[#FF6B00] transition-colors line-clamp-2">
               {article.title}
             </h3>
-            <p className="text-[10px] text-white/40 italic line-clamp-2 mt-2 mb-2">
+            <p className="text-[10px] text-white/40 italic line-clamp-2 mt-2">
               {previewText}
-            </p>
-            <p suppressHydrationWarning className="text-[10px] font-bold text-white/30 tracking-widest uppercase mb-4">
-              {new Date(article.createdAt).toLocaleDateString("es-AR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
             </p>
           </div>
           
