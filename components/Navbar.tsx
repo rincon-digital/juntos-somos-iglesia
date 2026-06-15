@@ -21,7 +21,7 @@ export default function Navbar() {
     { name: "Inicio", href: "/" },
     { name: "Prédicas", href: "/#predicas" },
     { name: "Cursos", href: "/#cursos" },
-    { name: "Articulos", href: "/articulos" },
+    { name: "Articulos", href: "/#articulos" },
     { name: "Ubicación", href: "/#ubicacion" },
   ];
 

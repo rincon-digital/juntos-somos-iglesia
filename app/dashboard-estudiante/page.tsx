@@ -23,6 +23,8 @@ import {
   GraduationCap,
   ArrowRight,
   CalendarClock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { getCurrentStudent, logout } from "@/actions/auth/auth";
 import { getStudentCoursePath } from "@/actions/course/courses";
@@ -64,6 +66,7 @@ export default function StudentDashboard() {
     new: "",
     confirm: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // ESTADOS DE RESPUESTA
   const [status, setStatus] = useState({
@@ -835,47 +838,74 @@ export default function StudentDashboard() {
                     <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
                       Contraseña Actual
                     </label>
-                    <input
-                      type="password"
-                      required
-                      value={passwords.current}
-                      onChange={(e) =>
-                        setPasswords({ ...passwords, current: e.target.value })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="••••••••"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={passwords.current}
+                        onChange={(e) =>
+                          setPasswords({ ...passwords, current: e.target.value })
+                        }
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
                       Nueva Contraseña
                     </label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      value={passwords.new}
-                      onChange={(e) =>
-                        setPasswords({ ...passwords, new: e.target.value })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="Mínimo 8 caracteres"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={8}
+                        value={passwords.new}
+                        onChange={(e) =>
+                          setPasswords({ ...passwords, new: e.target.value })
+                        }
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
+                        placeholder="Mínimo 8 caracteres"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
                       Confirmar Nueva Contraseña
                     </label>
-                    <input
-                      type="password"
-                      required
-                      value={passwords.confirm}
-                      onChange={(e) =>
-                        setPasswords({ ...passwords, confirm: e.target.value })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="••••••••"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={passwords.confirm}
+                        onChange={(e) =>
+                          setPasswords({ ...passwords, confirm: e.target.value })
+                        }
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   {status.error && (
                     <p className="text-red-500 text-xs text-center bg-red-500/10 p-2 rounded-lg">

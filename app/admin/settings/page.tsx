@@ -569,13 +569,22 @@ export default function SettingsPage() {
                     <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
                       Contraseña
                     </label>
-                    <input
-                      name="password"
-                      type="password"
-                      required
-                      className={`bg-white/5 border ${errors.password ? "border-red-500/50" : "border-white/10"} rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
-                      placeholder="••••••••"
-                    />
+                    <div className="relative">
+                      <input
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        className={`w-full bg-white/5 border ${errors.password ? "border-red-500/50" : "border-white/10"} rounded-2xl px-5 py-4 pr-12 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
                         {errors.password}

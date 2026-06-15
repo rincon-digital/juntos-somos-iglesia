@@ -135,6 +135,7 @@ export default function CourseCreate({ onSuccess }: CourseCreateProps) {
                   <textarea
                     required
                     rows={3}
+                    maxLength={5000}
                     value={formData.description}
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })

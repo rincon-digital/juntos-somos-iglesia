@@ -33,7 +33,7 @@ export default function Articulos({ onModalChange, limit }: ArticulosProps) {
   };
 
   return (
-    <section className="py-10 px-4 max-w-7xl mx-auto relative z-20">
+    <section id="articulos" className="py-10 px-4 max-w-7xl mx-auto relative z-20">
       <style>{editorStyles}</style>
 
       {/* HEADER */}
@@ -97,7 +97,7 @@ export default function Articulos({ onModalChange, limit }: ArticulosProps) {
 
 // Subcomponente ArticleCard
 function ArticleCard({ article, idx, previewText }: any) {
-  const shareUrl = `https://www.juntossomosiglesia.com/articulos/${article.slug}`;
+  const shareUrl = `https://jsioficial.com/articulos/${article.slug}`;
   const shareText = `Lee este artículo: ${article.title}`;
 
   const shareLinks = {

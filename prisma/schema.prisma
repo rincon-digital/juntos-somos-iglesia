@@ -47,7 +47,7 @@ model Profile {
 model Course {
   id             String   @id @default(uuid())
   name           String
-  description    String
+  description    String   @db.Text
   accessCode     String   
   quotaLimit     Int
   openEnrollment DateTime

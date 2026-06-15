@@ -18,7 +18,7 @@ async function main() {
       username: adminEmail,
       fullName: "Administrador Principal",
       password: hashedPassword,
-      role: "admin",
+      role: "superadmin",
       rank: "miembro",
     },
   });

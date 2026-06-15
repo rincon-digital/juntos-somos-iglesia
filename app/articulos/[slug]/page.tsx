@@ -84,7 +84,7 @@ export default async function ArticleDetailPage({ params }: Props) {
 
   if (!article) notFound();
 
-  const shareUrl = `https://www.juntossomosiglesia.com/articulos/${article.slug}`;
+  const shareUrl = `https://jsioficial.com/articulos/${article.slug}`;
   const shareText = `Lee este artículo: ${article.title}`;
 
   const shareLinks = {

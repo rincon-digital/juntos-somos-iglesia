@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { userRegister } from "../../lib/types/definitions";
+import { validateUser } from "@/lib/helpers/user/validationRegister";
 import { getUsernameSuggestions } from "@/lib/helpers/user/usernameSuggestions";
 import { getCurrentUser } from "../auth/auth";
 
@@ -12,6 +13,12 @@ const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function registerCourse(data: userRegister) {
   try {
+    if (data.fullName !== "EXISTING_USER") {
+      const validation = validateUser(data);
+      if (!validation.valid) {
+        return { error: Object.values(validation.errors)[0] };
+      }
+    }
     const course = await prisma.course.findUnique({
       where: { id: data.courseId },
       include: { _count: { select: { courseRegistration: true } } },

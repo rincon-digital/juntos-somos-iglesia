@@ -2,13 +2,14 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
-import { ArrowLeft, Lock, Loader2, User, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, User, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { toast, Toaster } from "sonner";
 import { login } from "@/actions/auth/auth";
 
 export default function UnifiedLogin() {
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -130,11 +131,18 @@ export default function UnifiedLogin() {
                 />
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="CONTRASEÑA"
                   required
-                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-6 text-xs font-black uppercase tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
+                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-14 text-xs font-black tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               <button

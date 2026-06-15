@@ -174,7 +174,7 @@ export default function Page() {
           <Predicas />
 
           <div>
-            <Cursos limit={4} onModalChange={setIsModalOpen} />
+            <Cursos limit={2} onModalChange={setIsModalOpen} />
           </div>
 
           <div>

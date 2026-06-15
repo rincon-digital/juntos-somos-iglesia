@@ -11,9 +11,11 @@ export async function validationDataCourse(data: Course) {
     errors.name = "El nombre debe tener al menos 5 caracteres.";
   }
 
-  // 2. Validación de Descripción (mínimo 10 caracteres)
+  // 2. Validación de Descripción (mínimo 10 caracteres, máximo 5000)
   if (!data.description || data.description.trim().length < 10) {
     errors.description = "La descripción debe tener al menos 10 caracteres.";
+  } else if (data.description.length > 5000) {
+    errors.description = "La descripción no puede superar los 5000 caracteres.";
   }
 
   // 3. Validación de Cupo (mayor a 1)

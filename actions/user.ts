@@ -124,9 +124,12 @@ export async function changePassword(
     const session = await validateSessionUser();
     if (!session) return { error: "Sesión expirada." };
 
-    // 1. Validar longitud mínima
+    // 1. Validar longitud mínima y composición
     if (!newPassword || newPassword.length < 8) {
       return { error: "La nueva contraseña debe tener al menos 8 caracteres." };
+    }
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return { error: "La contraseña debe contener al menos una letra mayúscula y un número." };
     }
 
     // 2. Buscar usuario para obtener el hash actual

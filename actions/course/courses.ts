@@ -306,6 +306,7 @@ export async function createCourse(data: CreateCourse) {
     revalidatePath("/admin/courses");
     return { success: "Curso creado", code: accessCode };
   } catch (error) {
+    console.log("Error al crear", error);
     return { error: "Error al crear." };
   }
 }

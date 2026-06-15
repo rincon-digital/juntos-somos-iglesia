@@ -32,10 +32,13 @@ export function validateUser(input: userRegister) {
       "La dirección es obligatoria y no debe superar 100 caracteres.";
   }
 
-  // password: obligatorio, mínimo 8 caracteres
+  // password: obligatorio, mínimo 8 caracteres, al menos una mayúscula y un número
   if (!input.password || input.password.length < 8) {
     errors.password =
       "La contraseña es obligatoria y debe tener al menos 8 caracteres.";
+  } else if (!/[A-Z]/.test(input.password) || !/[0-9]/.test(input.password)) {
+    errors.password =
+      "La contraseña debe contener al menos una letra mayúscula y un número.";
   }
 
   return {
@@ -69,10 +72,13 @@ export function validateAdmin(input: {
       "El nombre de usuario es obligatorio y debe tener al menos 3 caracteres.";
   }
 
-  // password: obligatorio, mínimo 8 caracteres
+  // password: obligatorio, mínimo 8 caracteres, al menos una mayúscula y un número
   if (!input.password || input.password.length < 8) {
     errors.password =
       "La contraseña es obligatoria y debe tener al menos 8 caracteres.";
+  } else if (!/[A-Z]/.test(input.password) || !/[0-9]/.test(input.password)) {
+    errors.password =
+      "La contraseña debe contener al menos una letra mayúscula y un número.";
   }
 
   // role: obligatorio

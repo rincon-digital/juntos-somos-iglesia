@@ -14,7 +14,9 @@ import {
   GraduationCap,
   KeyRound,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import {
   registerCourse,
@@ -41,6 +43,7 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
   const [formFields, setFormFields] = useState({
     fullName: "",
     dni: "",
@@ -367,12 +370,19 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
                       <div className="relative group">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-white transition-colors" size={16} />
                         <input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="CREA UNA CONTRASEÑA"
                           value={formFields.password}
                           onChange={(e) => setFormFields({ ...formFields, password: e.target.value })}
-                          className="w-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-bold outline-none focus:border-white/30 transition-all placeholder-white/20"
+                          className="w-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/10 rounded-xl py-3 pl-10 pr-12 text-xs font-bold outline-none focus:border-white/30 transition-all placeholder-white/20"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                     </div>
                   ) : (
@@ -397,12 +407,19 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
                       <div className="relative group">
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#FF6B00]" size={16} />
                         <input
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           placeholder="TU CONTRASEÑA"
                           value={formFields.password}
                           onChange={(e) => setFormFields({ ...formFields, password: e.target.value })}
-                          className="w-full bg-[#FF6B00]/5 border border-[#FF6B00]/20 rounded-xl py-3.5 pl-12 pr-4 text-xs font-black outline-none focus:border-[#FF6B00] tracking-widest transition-colors placeholder-[#FF6B00]/30"
+                          className="w-full bg-[#FF6B00]/5 border border-[#FF6B00]/20 rounded-xl py-3.5 pl-12 pr-12 text-xs font-black outline-none focus:border-[#FF6B00] tracking-widest transition-colors placeholder-[#FF6B00]/30"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-[#FF6B00]/60 hover:text-[#FF6B00] transition-colors"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                     </div>
                   )}
