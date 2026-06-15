@@ -180,8 +180,8 @@ function TestimonioCard({ testimonio, index, onClick }: any) {
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="relative group cursor-pointer bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden hover:bg-white/[0.04] hover:border-[#FF6B00]/30 transition-all duration-500 shadow-2xl flex flex-col h-[350px]"
+      // FIX: Eliminado overflow-hidden y shadow-2xl en móviles para evitar tearing al hacer scroll up
+      className="relative group cursor-pointer bg-white/[0.02] border border-white/5 rounded-[3rem] md:overflow-hidden hover:bg-white/[0.04] hover:border-[#FF6B00]/30 transition-all duration-500 md:shadow-2xl flex flex-col h-[350px]"
       onClick={onClick}
     >
       <div className="p-8 md:p-10 flex flex-col h-full relative z-10">

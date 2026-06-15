@@ -58,7 +58,7 @@ export default function AdminHeader() {
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl shadow-2xl transition-all duration-500"
+          className="flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl md:shadow-2xl transition-all duration-500"
         >
           {/* LOGO */}
           <div className="flex items-center gap-3 group">
