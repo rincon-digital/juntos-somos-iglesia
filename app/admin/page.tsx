@@ -414,7 +414,7 @@ export default function AdminStatsPage() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => router.push("/admin/courses/new")}
+                onClick={() => router.push("/admin/courses")}
                 className="flex items-center justify-center gap-2 bg-[#FF6B00] hover:bg-white text-black font-black uppercase tracking-widest text-[10px] px-6 py-3.5 rounded-2xl transition-all duration-300"
               >
                 <PlusCircle size={14} />

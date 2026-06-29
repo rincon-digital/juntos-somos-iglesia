@@ -41,3 +41,40 @@ html {
   color: #ff6b00 !important;
   font-weight: 900;
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   OPTI-RENDER GPU: Optimización para evitar glitches visuales en móviles
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Aceleración por hardware 3D en tarjetas, imágenes y animaciones de scroll */
+.group,
+.glass-card,
+.list-item,
+.hero-img,
+.hero-text,
+.predicas-header,
+.main-content {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Evitar glitches en elementos con filtros de desenfoque (blur) pesados */
+[class*="blur-"],
+.blur {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: filter, transform;
+}
+
+/* Optimización para transiciones más suaves en navegadores móviles */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
