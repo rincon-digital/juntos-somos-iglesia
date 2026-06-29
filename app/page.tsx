@@ -70,6 +70,26 @@ export default function Page() {
     return () => ctx.revert();
   }, [isLoading]);
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+      if (typeof window !== "undefined" && (window as any).lenis) {
+        (window as any).lenis.stop();
+      }
+    } else {
+      document.body.style.overflow = "";
+      if (typeof window !== "undefined" && (window as any).lenis) {
+        (window as any).lenis.start();
+      }
+    }
+    return () => {
+      document.body.style.overflow = "";
+      if (typeof window !== "undefined" && (window as any).lenis) {
+        (window as any).lenis.start();
+      }
+    };
+  }, [isModalOpen]);
+
   return (
     <main
       ref={containerRef}
@@ -171,7 +191,7 @@ export default function Page() {
 
         {/* SECCIONES */}
         <div className="relative z-20 bg-[#050505]">
-          <Predicas />
+          <Predicas onModalChange={setIsModalOpen} />
 
           <div>
             <Cursos limit={2} onModalChange={setIsModalOpen} />

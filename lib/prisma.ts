@@ -10,6 +10,7 @@ const prismaClientSingleton = () => {
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     connectionLimit: 5,
+    allowPublicKeyRetrieval: true,
   });
 
   return new PrismaClient({ adapter, log: ["query"] });

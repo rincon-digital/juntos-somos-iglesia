@@ -62,10 +62,20 @@ const PREDICAS_LISTA: PredicaItem[] = [
   },
 ];
 
-export default function Predicas() {
+interface PredicasProps {
+  onModalChange?: (isOpen: boolean) => void;
+}
+
+export default function Predicas({ onModalChange }: PredicasProps) {
   const [selected, setSelected] = useState<PredicaItem | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (onModalChange) {
+      onModalChange(selected !== null);
+    }
+  }, [selected, onModalChange]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -120,8 +130,8 @@ export default function Predicas() {
                 Cronograma
               </span>
             </div>
-            <h2 className="text-[10vw] md:text-[5vw] font-black uppercase leading-none tracking-tighter italic">
-              PASOS <span className="text-white/10 outline-text">DE FE</span>
+            <h2 className="text-[10vw] md:text-[5vw] font-black uppercase leading-none tracking-tighter italic text-white">
+              PASOS DE FE
             </h2>
           </div>
           <div className="max-w-[240px] border-l border-[#FF6B00] pl-4 py-1">
@@ -233,12 +243,7 @@ export default function Predicas() {
         </div>
       )}
 
-      <style jsx>{`
-        .outline-text {
-          -webkit-text-stroke: 1px rgba(255, 255, 255, 0.15);
-          color: transparent;
-        }
-      `}</style>
+
     </section>
   );
 }

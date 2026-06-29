@@ -8,6 +8,8 @@ import {
   AlertTriangle,
   Play,
   Loader2,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { userEvaluations } from "@/actions/user_course/evaluations/user.evaluations";
 import { toast } from "sonner";
@@ -22,9 +24,74 @@ export default function VideoModal({ video, onClose }: any) {
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
 
+  // Estados para pantalla completa
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Escuchar el evento de cambio de pantalla completa (por si presionan ESC)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (!modalRef.current) return;
+    try {
+      if (!document.fullscreenElement) {
+        if (modalRef.current.requestFullscreen) {
+          await modalRef.current.requestFullscreen();
+        } else if ((modalRef.current as any).webkitRequestFullscreen) {
+          await (modalRef.current as any).webkitRequestFullscreen();
+        } else if ((modalRef.current as any).msRequestFullscreen) {
+          await (modalRef.current as any).msRequestFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error("Error al alternar pantalla completa:", err);
+    }
+  };
+
+  // Función para guardar progreso y cerrar
+  const handleClose = (completed: boolean, isBlocked: boolean = false) => {
+    try {
+      if (playerRef.current && typeof playerRef.current.getCurrentTime === "function") {
+        const currentTime = playerRef.current.getCurrentTime();
+        if (currentTime > 1 && !isVideoEnded) {
+          localStorage.setItem(`jsi_video_pos_${video.id}`, currentTime.toString());
+        }
+      }
+    } catch (e) {}
+
+    // Si entramos en pantalla completa, salimos antes de cerrar para evitar bugs de visualización
+    if (document.fullscreenElement) {
+      try {
+        if (document.exitFullscreen) document.exitFullscreen();
+      } catch (err) {}
+    }
+
+    onClose(completed, isBlocked);
+  };
 
   // Cargar YouTube IFrame API
   useEffect(() => {
@@ -37,11 +104,40 @@ export default function VideoModal({ video, onClose }: any) {
         events: {
           onReady: () => {
             setIsPlayerReady(true);
+            
+            // Cargar posición guardada del localStorage
+            const savedTime = localStorage.getItem(`jsi_video_pos_${video.id}`);
+            if (savedTime) {
+              const time = parseFloat(savedTime);
+              setTimeout(() => {
+                try {
+                  if (playerRef.current && typeof playerRef.current.getDuration === "function") {
+                    const duration = playerRef.current.getDuration();
+                    if (time < duration - 10) {
+                      playerRef.current.seekTo(time, true);
+                    }
+                  } else {
+                    playerRef.current.seekTo(time, true);
+                  }
+                } catch (e) {
+                  console.error("Error al restaurar tiempo:", e);
+                }
+              }, 500);
+            }
           },
           onStateChange: (event: any) => {
             // 1 = playing, 2 = paused, 0 = ended, 3 = buffering
             if (event.data === 1) setIsPlaying(true);
-            if (event.data === 2) setIsPlaying(false);
+            if (event.data === 2) {
+              setIsPlaying(false);
+              // Guardar progreso al pausar
+              if (playerRef.current && typeof playerRef.current.getCurrentTime === "function") {
+                const currentTime = playerRef.current.getCurrentTime();
+                if (currentTime > 1) {
+                  localStorage.setItem(`jsi_video_pos_${video.id}`, currentTime.toString());
+                }
+              }
+            }
 
             if (event.data === 3) {
               setIsBuffering(true);
@@ -53,6 +149,8 @@ export default function VideoModal({ video, onClose }: any) {
               setIsVideoEnded(true);
               setShowEndScreen(true);
               setIsPlaying(false);
+              // Eliminar progreso al finalizar el video
+              localStorage.removeItem(`jsi_video_pos_${video.id}`);
             }
           },
         },
@@ -85,7 +183,27 @@ export default function VideoModal({ video, onClose }: any) {
       playerRef.current = null;
       setIsPlayerReady(false);
     };
-  }, [isMounted, video?.videoId]);
+  }, [isMounted, video?.videoId, video?.id]);
+
+  // Guardar progreso periódicamente cada 2 segundos mientras se reproduce
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying && playerRef.current && isPlayerReady) {
+      interval = setInterval(() => {
+        try {
+          if (playerRef.current && typeof playerRef.current.getCurrentTime === "function") {
+            const currentTime = playerRef.current.getCurrentTime();
+            if (currentTime > 1) {
+              localStorage.setItem(`jsi_video_pos_${video.id}`, currentTime.toString());
+            }
+          }
+        } catch (e) {}
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying, isPlayerReady, video?.id]);
 
   const questions = video.videoReview || [];
 
@@ -144,7 +262,7 @@ export default function VideoModal({ video, onClose }: any) {
         setCurrentQuestionIndex((prev) => prev + 1);
       } else {
         setStep("completed");
-        setTimeout(() => onClose(true), 2500);
+        setTimeout(() => handleClose(true), 2500);
       }
     } else {
       toast.error("Respuesta incorrecta. Volvé a intentarlo.");
@@ -157,21 +275,41 @@ export default function VideoModal({ video, onClose }: any) {
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 md:p-10">
       <motion.div
+        ref={modalRef}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative w-full max-w-5xl bg-[#080808] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col"
+        className={`relative w-full max-w-5xl bg-[#080808] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col transition-all duration-300 ${
+          isFullscreen ? "max-w-none w-screen h-screen rounded-none border-none" : ""
+        }`}
       >
-        {/* Botón cerrar */}
-        <div className="absolute top-6 right-6 z-[60]">
+        {/* Botón cerrar y fullscreen */}
+        <div className="absolute top-6 right-6 z-[60] flex items-center gap-3">
+          {step === "video" && (
+            <button
+              onClick={toggleFullscreen}
+              className="w-12 h-12 bg-black/50 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-all"
+              title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+            >
+              {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+            </button>
+          )}
+
           <button
-            onClick={() => onClose(false, step === "blocked")}
+            onClick={() => handleClose(false, step === "blocked")}
             className="w-12 h-12 bg-black/50 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-white transition-all"
+            title="Cerrar"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className={`w-full bg-black relative transition-all duration-500 ${step === "video" ? "aspect-video" : "min-h-[85vh] md:min-h-0 md:aspect-video"}`}>
+        <div className={`w-full bg-black relative transition-all duration-500 ${
+          isFullscreen 
+            ? "h-full flex-1" 
+            : step === "video" 
+              ? "aspect-video" 
+              : "min-h-[85vh] md:min-h-0 md:aspect-video"
+        }`}>
           {/* ── STEP: VIDEO ── */}
           {/* Usamos display dinámico para no desmontar el iframe nunca */}
           <div
@@ -257,7 +395,7 @@ export default function VideoModal({ video, onClose }: any) {
                         <button
                           onClick={() => {
                             setStep("completed");
-                            setTimeout(() => onClose(true), 2000);
+                            setTimeout(() => handleClose(true), 2000);
                           }}
                           className="bg-white text-black px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-green-400 transition-all flex items-center gap-3"
                         >
@@ -382,7 +520,7 @@ export default function VideoModal({ video, onClose }: any) {
                 Has superado el límite de intentos. Contactá a tu instructor.
               </p>
               <button
-                onClick={() => onClose(false, true)}
+                onClick={() => handleClose(false, true)}
                 className="bg-red-500 text-white px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all"
               >
                 Cerrar

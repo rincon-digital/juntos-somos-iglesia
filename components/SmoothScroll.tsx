@@ -14,6 +14,10 @@ export default function SmoothScroll() {
       lerp: 0.08, // Suavizado extra
     });
 
+    if (typeof window !== "undefined") {
+      (window as any).lenis = lenis;
+    }
+
     lenis.on("scroll", ScrollTrigger.update);
 
     gsap.ticker.add((time) => {
@@ -29,6 +33,11 @@ export default function SmoothScroll() {
 
     return () => {
       lenis.destroy();
+      if (typeof window !== "undefined") {
+        try {
+          delete (window as any).lenis;
+        } catch (e) {}
+      }
       gsap.ticker.remove((time) => lenis.raf(time * 1000));
       clearInterval(timer);
     };

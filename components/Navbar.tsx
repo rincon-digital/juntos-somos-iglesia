@@ -107,12 +107,15 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className={`flex items-center gap-2 bg-white text-black rounded-full font-black uppercase tracking-widest transition-all hover:bg-[#FF6B00] hover:text-white ${
-              isScrolled ? "px-4 py-1.5 text-[8px]" : "px-6 py-2.5 text-[10px]"
+            className={`flex items-center justify-center bg-white text-black hover:bg-[#FF6B00] hover:text-white font-black uppercase tracking-widest transition-all ${
+              isScrolled
+                ? "w-8 h-8 rounded-full sm:w-auto sm:h-auto sm:px-4 sm:py-1.5 sm:text-[8px] sm:gap-2"
+                : "w-10 h-10 rounded-full sm:w-auto sm:h-auto sm:px-6 sm:py-2.5 sm:text-[10px] sm:gap-2"
             }`}
+            title="Ingresar al Templo"
           >
-            <User size={isScrolled ? 10 : 12} />
-            Ingresar al Templo
+            <User size={isScrolled ? 12 : 14} />
+            <span className="hidden sm:inline">Ingresar al Templo</span>
           </Link>
 
           {/* ICONO DE MENÚ: Solo visible en móviles (lg:hidden) */}
@@ -130,17 +133,25 @@ export default function Navbar() {
 
         {/* MENÚ MÓVIL OVERLAY */}
         {isOpen && (
-          <div className="fixed inset-x-4 top-20 bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 flex flex-col gap-4 lg:hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-in slide-in-from-top-5 duration-300">
+          <div className="fixed inset-x-4 top-20 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 flex flex-col gap-4 lg:hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-in slide-in-from-top-5 duration-300">
             {menuItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className="text-2xl font-black uppercase italic border-b border-white/5 pb-2"
+                className="text-2xl font-black uppercase italic border-b border-white/5 pb-2 text-white/80 hover:text-[#FF6B00] transition-colors"
               >
                 {item.name}
               </Link>
             ))}
+            <Link
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              className="mt-2 flex items-center justify-center gap-2 bg-[#FF6B00] text-black font-black uppercase tracking-widest py-3.5 rounded-2xl hover:bg-white hover:text-black transition-all text-xs"
+            >
+              <User size={14} />
+              Ingresar al Templo
+            </Link>
           </div>
         )}
       </nav>
