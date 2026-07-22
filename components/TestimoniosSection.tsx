@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Quote, X, ArrowRight, MessageSquareQuote } from "lucide-react"; // Importado MessageSquareQuote para el icono vacío
 import { getTestimonies } from "@/actions/testimony/testimony";
@@ -16,6 +17,11 @@ export default function TestimoniosSection({
   const [testimonios, setTestimonios] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTestimonio, setSelectedTestimonio] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -110,64 +116,67 @@ export default function TestimoniosSection({
         </motion.div>
       )}
 
-      {/* ================= MODAL TESTIMONIO (Sin cambios) ================= */}
+      {/* ================= MODAL TESTIMONIO ================= */}
       <AnimatePresence>
-        {selectedTestimonio && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedTestimonio(null)}
-            className="fixed inset-0 z-[5000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-12 overscroll-none"
-          >
+        {mounted &&
+          selectedTestimonio &&
+          createPortal(
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedTestimonio(null)}
+              className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-12 overscroll-none"
             >
-              <button
-                onClick={() => setSelectedTestimonio(null)}
-                className="absolute top-6 right-6 z-[6000] w-10 h-10 bg-black/40 hover:bg-[#FF6B00] backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center transition-all duration-300 group"
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
               >
-                <X
-                  size={20}
-                  className="text-white group-hover:scale-110 transition-transform"
-                />
-              </button>
+                <button
+                  onClick={() => setSelectedTestimonio(null)}
+                  className="absolute top-6 right-6 z-[6000] w-10 h-10 bg-black/40 hover:bg-[#FF6B00] backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center transition-all duration-300 group"
+                >
+                  <X
+                    size={20}
+                    className="text-white group-hover:scale-110 transition-transform"
+                  />
+                </button>
 
-              <div
-                className="p-8 sm:p-12 overflow-y-auto custom-scrollbar relative flex-1 overscroll-contain"
-                onWheel={(e) => e.stopPropagation()}
-                onTouchMove={(e) => e.stopPropagation()}
-              >
-                <Quote className="text-white/5 w-24 h-24 absolute top-8 right-8 -rotate-12 pointer-events-none" />
+                <div
+                  className="p-8 sm:p-12 overflow-y-auto custom-scrollbar relative flex-1 overscroll-contain"
+                  onWheel={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                >
+                  <Quote className="text-white/5 w-24 h-24 absolute top-8 right-8 -rotate-12 pointer-events-none" />
 
-                <div className="flex items-center gap-6 mb-10 pb-10 border-b border-white/10 pr-12">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#FF6B00]/30 flex items-center justify-center font-black text-[#FF6B00] text-3xl uppercase shadow-inner shrink-0">
-                    {selectedTestimonio.author?.fullName?.charAt(0) || "F"}
+                  <div className="flex items-center gap-6 mb-10 pb-10 border-b border-white/10 pr-12">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#FF6B00]/30 flex items-center justify-center font-black text-[#FF6B00] text-3xl uppercase shadow-inner shrink-0">
+                      {selectedTestimonio.author?.fullName?.charAt(0) || "F"}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-1">
+                        {selectedTestimonio.author?.fullName || "Fiel"}
+                      </h3>
+                      <p className="text-[10px] text-[#FF6B00] font-black tracking-[0.3em] uppercase">
+                        {selectedTestimonio.author?.rank || "Congregante"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-1">
-                      {selectedTestimonio.author?.fullName || "Fiel"}
-                    </h3>
-                    <p className="text-[10px] text-[#FF6B00] font-black tracking-[0.3em] uppercase">
-                      {selectedTestimonio.author?.rank || "Congregante"}
+
+                  <div className="prose prose-invert max-w-none relative z-10">
+                    <p className="text-white/80 text-lg md:text-xl leading-relaxed font-light italic whitespace-pre-wrap selection:bg-[#FF6B00] selection:text-white">
+                      "{selectedTestimonio.content}"
                     </p>
                   </div>
                 </div>
-
-                <div className="prose prose-invert max-w-none relative z-10">
-                  <p className="text-white/80 text-lg md:text-xl leading-relaxed font-light italic whitespace-pre-wrap selection:bg-[#FF6B00] selection:text-white">
-                    "{selectedTestimonio.content}"
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+              </motion.div>
+            </motion.div>,
+            document.body,
+          )}
       </AnimatePresence>
     </section>
   );

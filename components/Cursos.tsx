@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GraduationCap, ArrowUpRight, X } from "lucide-react";
 import { getCourses } from "@/actions/course/courses";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +21,11 @@ export default function Cursos({
   const [selectedCurso, setSelectedCurso] = useState<any | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchPublicCourses = async () => {
@@ -185,55 +191,59 @@ export default function Cursos({
 
       {/* --- MODAL DE INSCRIPCIÓN (TU FORMULARIO) --- */}
       <AnimatePresence>
-        {showRegister && selectedCurso && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowRegister(false);
-                setSelectedCurso(null);
-              }}
-              className="absolute inset-0 bg-black/98 backdrop-blur-2xl"
-            />
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className="relative w-full max-w-[1000px] bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[95vh]"
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-black uppercase italic text-white">
-                    Inscripción
-                  </h3>
-                  <p className="text-[10px] text-[#FF6B00] font-bold uppercase tracking-widest mt-1">
-                    {selectedCurso.name}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowRegister(false);
-                    setSelectedCurso(null);
-                  }}
-                  className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/40"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* AQUÍ SE MONTA TU FORMULARIO CORREGIDO */}
-              <StudentRegisterForm
-                courseId={selectedCurso.id}
-                onSuccess={() => {
+        {mounted &&
+          showRegister &&
+          selectedCurso &&
+          createPortal(
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
                   setShowRegister(false);
                   setSelectedCurso(null);
                 }}
+                className="absolute inset-0 bg-black/98 backdrop-blur-2xl"
               />
-            </motion.div>
-          </div>
-        )}
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+                className="relative w-full max-w-[1000px] bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[95vh]"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-2xl font-black uppercase italic text-white">
+                      Inscripción
+                    </h3>
+                    <p className="text-[10px] text-[#FF6B00] font-bold uppercase tracking-widest mt-1">
+                      {selectedCurso.name}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowRegister(false);
+                      setSelectedCurso(null);
+                    }}
+                    className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/40"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* AQUÍ SE MONTA TU FORMULARIO CORREGIDO */}
+                <StudentRegisterForm
+                  courseId={selectedCurso.id}
+                  onSuccess={() => {
+                    setShowRegister(false);
+                    setSelectedCurso(null);
+                  }}
+                />
+              </motion.div>
+            </div>,
+            document.body,
+          )}
       </AnimatePresence>
     </section>
   );

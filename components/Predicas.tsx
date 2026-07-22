@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { X, ArrowUpRight, CalendarDays } from "lucide-react";
@@ -68,8 +69,13 @@ interface PredicasProps {
 
 export default function Predicas({ onModalChange }: PredicasProps) {
   const [selected, setSelected] = useState<PredicaItem | null>(null);
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (onModalChange) {
@@ -179,69 +185,72 @@ export default function Predicas({ onModalChange }: PredicasProps) {
       </div>
 
       {/* MODAL AJUSTADO CON HORARIO CONDICIONAL */}
-      {selected && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
-          <div
-            className="absolute inset-0 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
-            onClick={() => setSelected(null)}
-          />
-          <div className="relative w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95">
-            <button
+      {mounted &&
+        selected &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6">
+            <div
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm animate-in fade-in duration-300"
               onClick={() => setSelected(null)}
-              className="absolute top-6 right-6 text-white/20 hover:text-[#FF6B00] transition-colors"
-            >
-              <X size={24} />
-            </button>
-
-            <div className="space-y-6">
-              <div>
-                <p className="text-[#FF6B00] font-mono text-[9px] tracking-[0.4em] uppercase font-black mb-1">
-                  // {selected.dia}
-                </p>
-                <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">
-                  {selected.titulo}
-                </h2>
-              </div>
-              <div className="h-px w-12 bg-[#FF6B00]" />
-              <p className="text-sm md:text-base text-white/60 italic leading-relaxed">
-                "{selected.detalle}"
-              </p>
-
-              {/* Renderizado dinámico de la info inferior */}
-              <div
-                className={`grid gap-3 pt-4 ${selected.horario ? "grid-cols-2" : "grid-cols-1"}`}
+            />
+            <div className="relative w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95">
+              <button
+                onClick={() => setSelected(null)}
+                className="absolute top-6 right-6 text-white/20 hover:text-[#FF6B00] transition-colors"
               >
-                {selected.horario && (
-                  <div className="bg-white/5 p-4 rounded-2xl">
+                <X size={24} />
+              </button>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="text-[#FF6B00] font-mono text-[9px] tracking-[0.4em] uppercase font-black mb-1">
+                    // {selected.dia}
+                  </p>
+                  <h2 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter">
+                    {selected.titulo}
+                  </h2>
+                </div>
+                <div className="h-px w-12 bg-[#FF6B00]" />
+                <p className="text-sm md:text-base text-white/60 italic leading-relaxed">
+                  "{selected.detalle}"
+                </p>
+
+                {/* Renderizado dinámico de la info inferior */}
+                <div
+                  className={`grid gap-3 pt-4 ${selected.horario ? "grid-cols-2" : "grid-cols-1"}`}
+                >
+                  {selected.horario && (
+                    <div className="bg-white/5 p-4 rounded-2xl">
+                      <p className="text-[8px] font-black uppercase text-white/30 tracking-widest mb-1">
+                        Horario
+                      </p>
+                      <p className="text-lg font-black italic">
+                        {selected.horario}
+                      </p>
+                    </div>
+                  )}
+                  <div className="bg-white/5 p-4 rounded-2xl border-l-2 border-[#FF6B00]">
                     <p className="text-[8px] font-black uppercase text-white/30 tracking-widest mb-1">
-                      Horario
+                      Lugar
                     </p>
                     <p className="text-lg font-black italic">
-                      {selected.horario}
+                      {selected.dia === "Lunes"
+                        ? "En el Hogar"
+                        : "Sargento Cabral 844"}
                     </p>
                   </div>
-                )}
-                <div className="bg-white/5 p-4 rounded-2xl border-l-2 border-[#FF6B00]">
-                  <p className="text-[8px] font-black uppercase text-white/30 tracking-widest mb-1">
-                    Lugar
-                  </p>
-                  <p className="text-lg font-black italic">
-                    {selected.dia === "Lunes"
-                      ? "En el Hogar"
-                      : "Sargento Cabral 844"}
-                  </p>
                 </div>
-              </div>
 
-              {selected.nota && (
-                <p className="text-[9px] font-black uppercase text-[#FF6B00]/60 tracking-tighter text-center">
-                  * {selected.nota}
-                </p>
-              )}
+                {selected.nota && (
+                  <p className="text-[9px] font-black uppercase text-[#FF6B00]/60 tracking-tighter text-center">
+                    * {selected.nota}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
 
     </section>
