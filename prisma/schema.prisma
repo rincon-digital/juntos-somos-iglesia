@@ -33,6 +33,7 @@ model User {
   testimonies        Testimony[]
   managedCourses     CourseManager[] 
   createdVideos      CourseVideo[]     // NUEVO: Videos subidos por este usuario
+  uploadedImages     Image[]           // Fotos subidas por el usuario
 }
 
 model Profile {
@@ -59,6 +60,7 @@ model Course {
   managers           CourseManager[]
   courseRegistration CourseRegistration[]
   video              CourseVideo[]
+  events             Event[]
 }
 
 model CourseManager {
@@ -197,4 +199,40 @@ model Testimony {
   updatedAt   DateTime @updatedAt
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  date        DateTime @default(now())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  images      Image[]
+
+  @@map("events")
+}
+
+model Image {
+  id          String   @id @default(uuid())
+  url         String
+  publicId    String   @unique
+  tags        Json?
+  isProtected Boolean  @default(false)
+  isFavorite  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  eventId     String?
+  event       Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("images")
 }
