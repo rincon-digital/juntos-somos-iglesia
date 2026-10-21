@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   Sparkles,
   Eye,
-  EyeOff
+  EyeOff,
+  Mail
 } from "lucide-react";
 import {
   registerCourse,
@@ -46,6 +47,7 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [formFields, setFormFields] = useState({
     fullName: "",
+    email: "",
     dni: "",
     phone: "",
     address: "",
@@ -142,6 +144,7 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
     const data = {
       fullName: activeTab === "existing" ? "EXISTING_USER" : formFields.fullName,
       username: activeTab === "existing" ? "EXISTING_USER" : usernameValue,
+      email: activeTab === "existing" ? undefined : formFields.email,
       dni: formFields.dni,
       phone: activeTab === "existing" ? "000000" : formFields.phone,
       address: activeTab === "existing" ? "EXISTING_ADDRESS" : formFields.address,
@@ -333,6 +336,17 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
                               ? "border-red-500/50 focus:border-red-500"
                               : "border-[#FF6B00]/20 focus:border-[#FF6B00]"
                           }`}
+                        />
+                      </div>
+
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#FF6B00] transition-colors" size={16} />
+                        <input
+                          type="email"
+                          placeholder="CORREO ELECTRÓNICO (OPCIONAL)"
+                          value={formFields.email}
+                          onChange={(e) => setFormFields({ ...formFields, email: e.target.value })}
+                          className="w-full bg-white/[0.02] hover:bg-white/[0.04] border border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-bold outline-none focus:bg-[#FF6B00]/5 focus:border-[#FF6B00]/50 transition-all placeholder-white/20"
                         />
                       </div>
 

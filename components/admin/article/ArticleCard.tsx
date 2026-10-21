@@ -13,8 +13,15 @@ import {
   FileText,
   ArrowRight,
   Check,
+  Youtube,
+  Plus,
 } from "lucide-react";
 import { deleteArticle, updateArticle } from "@/actions/articles/articles";
+import {
+  getYouTubeID,
+  getYouTubeThumbnail,
+  parseArticleYouTubeUrls,
+} from "@/lib/helpers/article/validationArticle";
 import { toast } from "sonner";
 import RichTextEditor, { editorStyles } from "./RichTextEditor";
 
@@ -40,18 +47,48 @@ interface ArticleCardProps {
 }
 
 export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
+  const initialYoutubeUrls = parseArticleYouTubeUrls(article.youtubeUrls);
+
   const [showReadingModal, setShowReadingModal] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(article.title);
   const [editContent, setEditContent] = useState(article.content);
+  const [editYoutubeUrls, setEditYoutubeUrls] =
+    useState<string[]>(initialYoutubeUrls);
+  const [youtubeInput, setYoutubeInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCancelEdit = () => {
     setEditTitle(article.title);
     setEditContent(article.content);
+    setEditYoutubeUrls(parseArticleYouTubeUrls(article.youtubeUrls));
+    setYoutubeInput("");
     setIsEditing(false);
+  };
+
+  const handleAddYoutubeUrl = () => {
+    const cleanUrl = youtubeInput.trim();
+    if (!cleanUrl) return;
+
+    const videoId = getYouTubeID(cleanUrl);
+    if (!videoId) {
+      toast.error("Ingresa un enlace de YouTube válido.");
+      return;
+    }
+
+    if (editYoutubeUrls.some((u) => getYouTubeID(u) === videoId)) {
+      toast.error("Este video ya está en la lista.");
+      return;
+    }
+
+    setEditYoutubeUrls((prev) => [...prev, cleanUrl]);
+    setYoutubeInput("");
+  };
+
+  const handleRemoveYoutubeUrl = (index: number) => {
+    setEditYoutubeUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -60,14 +97,28 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
       return;
     }
 
+    const finalUrls = [...editYoutubeUrls];
+    if (youtubeInput.trim()) {
+      const pendingId = getYouTubeID(youtubeInput.trim());
+      if (!pendingId) {
+        toast.error("El enlace de YouTube escrito no es válido.");
+        return;
+      }
+      if (!finalUrls.some((u) => getYouTubeID(u) === pendingId)) {
+        finalUrls.push(youtubeInput.trim());
+      }
+    }
+
     setIsSaving(true);
     try {
       const res = await updateArticle(article.id, {
         title: editTitle,
         content: editContent,
+        youtubeUrls: finalUrls,
       });
       if (res.success) {
         toast.success("Artículo actualizado.");
+        setYoutubeInput("");
         setIsEditing(false);
         onRefresh();
       } else {
@@ -112,6 +163,12 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
       .trim();
   };
 
+  const articleYoutubeUrls = parseArticleYouTubeUrls(article.youtubeUrls);
+  const fallbackThumb =
+    !article.imageUrl && articleYoutubeUrls.length > 0
+      ? getYouTubeThumbnail(articleYoutubeUrls[0], "hqdefault")
+      : null;
+
   return (
     <>
       {/* Inyectamos los estilos globales que definen los colores y tamaños de H1, H2 y Listas */}
@@ -133,12 +190,26 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
               fill
               className="object-cover opacity-50 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
             />
+          ) : fallbackThumb ? (
+            <img
+              src={fallbackThumb}
+              alt={article.title}
+              className="w-full h-full object-cover opacity-50 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+            />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-white/[0.02]">
               <FileText size={48} className="text-white/[0.05]" />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
+
+          {articleYoutubeUrls.length > 0 && (
+            <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/70 border border-white/10 backdrop-blur-md flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white">
+              <Youtube size={13} className="text-red-500" />
+              {articleYoutubeUrls.length}{" "}
+              {articleYoutubeUrls.length === 1 ? "Video" : "Videos"}
+            </div>
+          )}
         </div>
 
         <div className="p-8 flex-1 flex flex-col">
@@ -167,7 +238,14 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
             <div className="absolute top-6 right-6 z-[6000] flex items-center gap-2">
               {!isEditing ? (
                 <button
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    setEditTitle(article.title);
+                    setEditContent(article.content);
+                    setEditYoutubeUrls(
+                      parseArticleYouTubeUrls(article.youtubeUrls),
+                    );
+                    setIsEditing(true);
+                  }}
                   className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-[#FF6B00] border border-white/10 rounded-full transition-all font-black uppercase text-[9px] text-white"
                 >
                   <Edit3 size={14} /> Editar
@@ -193,14 +271,20 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
 
             {/* Banner lateral */}
             <div className="w-full md:w-5/12 h-[40vh] md:h-full relative overflow-hidden bg-[#0a0a0a]">
-              {article.imageUrl && (
+              {article.imageUrl ? (
                 <Image
                   src={article.imageUrl}
                   alt=""
                   fill
                   className="object-cover opacity-40"
                 />
-              )}
+              ) : fallbackThumb ? (
+                <img
+                  src={fallbackThumb}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+              ) : null}
               <div className="absolute inset-0 bg-gradient-to-t from-[#080808] md:bg-gradient-to-r md:from-transparent md:to-[#080808]" />
               <div className="absolute bottom-16 left-12 right-12 hidden md:block">
                 <p className="text-[10px] font-black text-[#FF6B00] uppercase tracking-[0.3em] mb-4">
@@ -222,7 +306,7 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
               </div>
             </div>
 
-            {/* Columna Derecha: Contenido con soporte para H1, H2 y Listas */}
+            {/* Columna Derecha: Contenido con soporte para H1, H2, Listas y Videos de YouTube */}
             <div className="w-full md:w-7/12 h-[60vh] md:h-full flex flex-col bg-[#080808]">
               <div className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar">
                 <div className="max-w-xl mx-auto space-y-12">
@@ -252,12 +336,84 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        className="space-y-8"
                       >
                         <RichTextEditor
                           value={editContent}
                           onChange={setEditContent}
                           placeholder="Contenido..."
                         />
+
+                        {/* Editor de enlaces de YouTube */}
+                        <div className="bg-[#0f0f0f] border border-white/[0.08] rounded-2xl p-6 space-y-4">
+                          <label className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <Youtube size={16} className="text-[#FF6B00]" />
+                            Videos de YouTube ({editYoutubeUrls.length})
+                          </label>
+
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Pegá el link de YouTube aquí"
+                              value={youtubeInput}
+                              onChange={(e) => setYoutubeInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddYoutubeUrl();
+                                }
+                              }}
+                              className="flex-1 bg-white/[0.04] border border-white/[0.08] px-4 py-3 rounded-xl text-xs text-white placeholder:text-white/20 outline-none focus:border-[#FF6B00]/40 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddYoutubeUrl}
+                              className="px-4 py-3 bg-[#FF6B00]/10 hover:bg-[#FF6B00] text-[#FF6B00] hover:text-white border border-[#FF6B00]/30 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center gap-1.5 shrink-0"
+                            >
+                              <Plus size={14} /> Añadir
+                            </button>
+                          </div>
+
+                          {editYoutubeUrls.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                              {editYoutubeUrls.map((url, idx) => {
+                                const thumb = getYouTubeThumbnail(
+                                  url,
+                                  "mqdefault",
+                                );
+                                return (
+                                  <div
+                                    key={`${url}-${idx}`}
+                                    className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-black/40"
+                                  >
+                                    {thumb && (
+                                      <img
+                                        src={thumb}
+                                        alt={`YouTube ${idx + 1}`}
+                                        className="w-full aspect-video object-cover opacity-60"
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                      <Youtube
+                                        className="text-red-500"
+                                        size={26}
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleRemoveYoutubeUrl(idx)
+                                      }
+                                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 hover:bg-red-600 text-white/70 hover:text-white transition-colors"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </motion.div>
                     ) : (
                       <motion.div
@@ -265,11 +421,40 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        className="space-y-10"
                       >
-                        {/* Aquí se renderizan los H1, H2 y Listas 
-                            con los estilos compartidos del editor 
-                        */}
                         <RichContent html={article.content} />
+
+                        {articleYoutubeUrls.length > 0 && (
+                          <div className="space-y-6 pt-6 border-t border-white/5">
+                            <div className="flex items-center gap-2 text-[#FF6B00]">
+                              <Youtube size={18} />
+                              <span className="text-[10px] font-black uppercase tracking-[0.3em]">
+                                Videos Relacionados ({articleYoutubeUrls.length})
+                              </span>
+                            </div>
+                            <div className="space-y-6">
+                              {articleYoutubeUrls.map((url, idx) => {
+                                const videoId = getYouTubeID(url);
+                                if (!videoId) return null;
+                                return (
+                                  <div
+                                    key={`${videoId}-${idx}`}
+                                    className="w-full aspect-video rounded-3xl overflow-hidden border border-white/10 bg-black shadow-2xl"
+                                  >
+                                    <iframe
+                                      className="w-full h-full"
+                                      src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                                      title={`${article.title} - Video ${idx + 1}`}
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>

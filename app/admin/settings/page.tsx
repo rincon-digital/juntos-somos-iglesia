@@ -34,7 +34,7 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<any>({});
 
   // Estados para editar perfil
-  const [profileData, setProfileData] = useState({ fullName: "", username: "" });
+  const [profileData, setProfileData] = useState({ fullName: "", username: "", email: "" });
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
   // Estados para seguridad
@@ -51,7 +51,7 @@ export default function SettingsPage() {
           setUserRole(session.role as Role);
           const data = await getAdminProfileData();
           if (data) {
-             setProfileData({ fullName: data.fullName, username: data.username });
+             setProfileData({ fullName: data.fullName, username: data.username, email: data.email || "" });
           }
         }
       } catch (error) {
@@ -96,6 +96,7 @@ export default function SettingsPage() {
       formData.get("password") as string,
       formData.get("fullName") as string,
       formData.get("role") as Role,
+      formData.get("email") as string,
     );
 
     if (result.ok) {
@@ -328,6 +329,19 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
+                      Correo Electrónico (Opcional)
+                    </label>
+                    <input
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      placeholder="correo@ejemplo.com"
+                      className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors"
+                    />
+                  </div>
+
                   <button
                     disabled={loading || suggestions.length > 0}
                     className="mt-4 bg-white text-black font-black uppercase py-5 rounded-2xl tracking-widest text-[10px] hover:bg-[#FF6B00] hover:text-white disabled:opacity-50 transition-all shadow-xl flex items-center justify-center gap-3 w-full md:w-auto md:ml-auto md:px-12"
@@ -533,6 +547,23 @@ export default function SettingsPage() {
                     {errors.username && (
                       <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
                         {errors.username}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
+                      Correo Electrónico (Opcional)
+                    </label>
+                    <input
+                      name="email"
+                      type="email"
+                      className={`bg-white/5 border ${errors.email ? "border-red-500/50" : "border-white/10"} rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
+                      placeholder="juan@ejemplo.com"
+                    />
+                    {errors.email && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
+                        {errors.email}
                       </p>
                     )}
                   </div>

@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
-import { ArrowLeft, Lock, Loader2, User, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, User, ShieldCheck, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { toast, Toaster } from "sonner";
 import { login } from "@/actions/auth/auth";
@@ -10,6 +10,7 @@ import { login } from "@/actions/auth/auth";
 export default function UnifiedLogin() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -25,8 +26,29 @@ export default function UnifiedLogin() {
     return () => ctx.revert();
   }, []);
 
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (lockoutSeconds > 0) {
+      toast.error("Acceso bloqueado temporalmente", {
+        description: `Espera ${formatCountdown(lockoutSeconds)} antes de volver a intentar.`,
+      });
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -58,9 +80,16 @@ export default function UnifiedLogin() {
         },
       );
     } else {
-      toast.error(res.error || "Credenciales inválidas", {
-        description: "Revisa tu usuario y contraseña e intenta nuevamente.",
-      });
+      if (res.blocked && res.remainingSeconds) {
+        setLockoutSeconds(res.remainingSeconds);
+        toast.error("Acceso bloqueado por 3 minutos", {
+          description: res.error,
+        });
+      } else {
+        toast.error(res.error || "Credenciales inválidas", {
+          description: "Revisa tu usuario o email y contraseña e intenta nuevamente.",
+        });
+      }
       
       gsap.to(formRef.current, {
         x: 10,
@@ -109,6 +138,24 @@ export default function UnifiedLogin() {
               </h1>
             </div>
 
+            {lockoutSeconds > 0 && (
+              <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                <ShieldAlert className="text-red-500 shrink-0 mt-0.5" size={18} />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-red-400">
+                    Petición bloqueada por seguridad
+                  </p>
+                  <p className="text-xs text-white/70 mt-1">
+                    Has fallado 5 intentos. Podrás volver a intentar en{" "}
+                    <span className="text-red-400 font-mono font-bold">
+                      {formatCountdown(lockoutSeconds)}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="relative group">
                 <User
@@ -118,9 +165,10 @@ export default function UnifiedLogin() {
                 <input
                   name="username"
                   type="text"
-                  placeholder="USUARIO"
+                  placeholder="USUARIO O EMAIL"
                   required
-                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-6 text-xs font-black uppercase tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
+                  disabled={lockoutSeconds > 0}
+                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-6 text-xs font-black tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20 disabled:opacity-40"
                 />
               </div>
 
@@ -134,7 +182,8 @@ export default function UnifiedLogin() {
                   type={showPassword ? "text" : "password"}
                   placeholder="CONTRASEÑA"
                   required
-                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-14 text-xs font-black tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
+                  disabled={lockoutSeconds > 0}
+                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-14 text-xs font-black tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20 disabled:opacity-40"
                 />
                 <button
                   type="button"
@@ -146,10 +195,12 @@ export default function UnifiedLogin() {
               </div>
 
               <button
-                disabled={loading}
+                disabled={loading || lockoutSeconds > 0}
                 className="w-full bg-[#FF6B00] text-black font-black uppercase py-6 rounded-2xl flex items-center justify-center gap-3 hover:bg-white transition-all duration-500 mt-6 italic tracking-tighter disabled:opacity-50 shadow-xl shadow-[#FF6B00]/10"
               >
-                {loading ? (
+                {lockoutSeconds > 0 ? (
+                  `BLOQUEADO (${formatCountdown(lockoutSeconds)})`
+                ) : loading ? (
                   <>
                     <Loader2 className="animate-spin" size={18} /> VERIFICANDO...
                   </>

@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Role } from "@/lib/types/definitions";
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  clearRateLimit,
+} from "@/lib/utils/rateLimit";
 
 // CLAVE DEL TOKEN
 const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -44,8 +49,9 @@ export async function validateSessionUser(requiredRole?: Role) {
   }
 }
 
-//EDITAR INFORMACION DE CONTACTO
+//EDITAR INFORMACION DE CONTACTO (EMAIL, TELEFONO, DIRECCION)
 export async function updateContactInfo(data: {
+  email?: string;
   phone?: string;
   address?: string;
 }) {
@@ -53,28 +59,50 @@ export async function updateContactInfo(data: {
     const session = await validateSessionUser();
     if (!session) return { error: "No autorizado." };
 
-    const updateData: any = {};
+    const userUpdateData: { email?: string | null } = {};
+    const profileUpdateData: { phone?: string; address?: string } = {};
 
-    // Si el usuario envía el campo, lo limpiamos. Si está vacío, guardamos null.
+    if (data.email !== undefined) {
+      const cleanEmail = data.email.trim().toLowerCase();
+      if (
+        cleanEmail !== "" &&
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)
+      ) {
+        return { error: "El formato del correo electrónico no es válido." };
+      }
+      userUpdateData.email = cleanEmail === "" ? null : cleanEmail;
+    }
+
     if (data.phone !== undefined) {
-      const cleanPhone = data.phone.trim();
-      updateData.phone = cleanPhone === "" ? null : cleanPhone;
+      profileUpdateData.phone = data.phone.trim();
     }
 
     if (data.address !== undefined) {
-      const cleanAddress = data.address.trim();
-      updateData.address = cleanAddress === "" ? null : cleanAddress;
+      profileUpdateData.address = data.address.trim();
     }
 
     await prisma.user.update({
       where: { id: session.userId },
-      data: updateData,
+      data: {
+        ...userUpdateData,
+        ...(Object.keys(profileUpdateData).length > 0
+          ? {
+              profile: {
+                update: profileUpdateData,
+              },
+            }
+          : {}),
+      },
     });
 
     revalidatePath("/profile");
+    revalidatePath("/dashboard-estudiante");
     return { success: "Información de contacto actualizada." };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
+    if (error.code === "P2002") {
+      return { error: "Este correo electrónico ya está en uso." };
+    }
     return { error: "Error al actualizar el contacto." };
   }
 }
@@ -124,6 +152,18 @@ export async function changePassword(
     const session = await validateSessionUser();
     if (!session) return { error: "Sesión expirada." };
 
+    // Verificar bloqueo por intentos fallidos
+    const rateStatus = await checkRateLimit("change_password", session.userId);
+    if (rateStatus.blocked) {
+      return {
+        error:
+          rateStatus.message ||
+          "Demasiados intentos fallidos. Intenta en 3 minutos.",
+        blocked: true,
+        remainingSeconds: rateStatus.remainingSeconds,
+      };
+    }
+
     // 1. Validar longitud mínima y composición
     if (!newPassword || newPassword.length < 8) {
       return { error: "La nueva contraseña debe tener al menos 8 caracteres." };
@@ -143,8 +183,22 @@ export async function changePassword(
     // 3. Verificar si la contraseña actual es correcta
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return { error: "La contraseña actual es incorrecta." };
+      const attempt = await recordFailedAttempt("change_password", session.userId);
+      if (attempt.blocked) {
+        return {
+          error:
+            attempt.message ||
+            "Has superado los 5 intentos. Bloqueado por 3 minutos.",
+          blocked: true,
+          remainingSeconds: attempt.remainingSeconds,
+        };
+      }
+      return {
+        error: `La contraseña actual es incorrecta (${attempt.remainingAttempts} intento${attempt.remainingAttempts === 1 ? "" : "s"} restante${attempt.remainingAttempts === 1 ? "" : "s"}).`,
+      };
     }
+
+    await clearRateLimit("change_password", session.userId);
 
     // 4. Encriptar la nueva contraseña
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);

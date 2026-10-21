@@ -32,6 +32,15 @@ export function validateUser(input: userRegister) {
       "La dirección es obligatoria y no debe superar 100 caracteres.";
   }
 
+  // email: opcional, formato válido si se envía
+  if (
+    input.email &&
+    input.email.trim() !== "" &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())
+  ) {
+    errors.email = "El formato del correo electrónico no es válido.";
+  }
+
   // password: obligatorio, mínimo 8 caracteres, al menos una mayúscula y un número
   if (!input.password || input.password.length < 8) {
     errors.password =
@@ -49,6 +58,7 @@ export function validateUser(input: userRegister) {
 
 export function validateAdmin(input: {
   username: string;
+  email?: string;
   password: string;
   fullName: string;
   role: Role;
@@ -70,6 +80,15 @@ export function validateAdmin(input: {
   if (!input.username || input.username.trim().length < 3) {
     errors.username =
       "El nombre de usuario es obligatorio y debe tener al menos 3 caracteres.";
+  }
+
+  // email: opcional, pero si se envía debe tener formato válido
+  if (
+    input.email &&
+    input.email.trim() !== "" &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())
+  ) {
+    errors.email = "El formato del correo electrónico no es válido.";
   }
 
   // password: obligatorio, mínimo 8 caracteres, al menos una mayúscula y un número

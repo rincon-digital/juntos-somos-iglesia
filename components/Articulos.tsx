@@ -2,8 +2,12 @@
 import { useEffect, useState } from "react";
 import { getArticles } from "@/actions/articles/articles";
 import { motion } from "framer-motion";
-import { FileText, ArrowRight, User, Inbox, MessageCircle, Facebook, Instagram } from "lucide-react";
+import { FileText, ArrowRight, User, Inbox, MessageCircle, Facebook, Instagram, Youtube } from "lucide-react";
 import { editorStyles } from "./admin/article/RichTextEditor";
+import {
+  getYouTubeThumbnail,
+  parseArticleYouTubeUrls,
+} from "@/lib/helpers/article/validationArticle";
 import Link from "next/link";
 
 interface ArticulosProps {
@@ -99,6 +103,12 @@ export default function Articulos({ onModalChange, limit }: ArticulosProps) {
 function ArticleCard({ article, idx, previewText }: any) {
   const shareUrl = `https://jsioficial.com/articulos/${article.slug}`;
   const shareText = `Lee este artículo: ${article.title}`;
+  const youtubeUrls = parseArticleYouTubeUrls(article.youtubeUrls);
+  const coverImage =
+    article.imageUrl ||
+    (youtubeUrls.length > 0
+      ? getYouTubeThumbnail(youtubeUrls[0], "hqdefault")
+      : null);
 
   const shareLinks = {
     whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareUrl)}`,
@@ -122,9 +132,9 @@ function ArticleCard({ article, idx, previewText }: any) {
         className="group cursor-pointer bg-[#0a0a0a] border border-white/5 rounded-[3rem] overflow-hidden hover:border-[#FF6B00]/40 transition-all duration-500 flex flex-col h-[400px]"
       >
         <div className="relative h-[50%] w-full overflow-hidden bg-white/5 flex items-center justify-center">
-          {article.imageUrl ? (
+          {coverImage ? (
             <img
-              src={article.imageUrl}
+              src={coverImage}
               alt={article.title}
               className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700"
             />
@@ -135,6 +145,14 @@ function ArticleCard({ article, idx, previewText }: any) {
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
+
+          {youtubeUrls.length > 0 && (
+            <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/70 border border-white/10 backdrop-blur-md flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-white">
+              <Youtube size={13} className="text-red-500" />
+              {youtubeUrls.length}{" "}
+              {youtubeUrls.length === 1 ? "Video" : "Videos"}
+            </div>
+          )}
         </div>
 
         <div className="p-8 flex-1 flex flex-col justify-between relative z-10 -mt-6">

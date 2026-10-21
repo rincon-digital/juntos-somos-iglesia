@@ -11,7 +11,7 @@ import generateAccessCode from "@/lib/utils/generatorsCode";
 import { getCurrentUser } from "../auth/auth";
 import { validationCollaboratorCourse } from "@/lib/helpers/course/validationAccessCourse";
 import { validationDataCourse } from "@/lib/helpers/course/validationCourse";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 export async function updateCourse(data: UpdateCourse) {
   try {
@@ -50,6 +50,9 @@ export async function updateCourse(data: UpdateCourse) {
     });
 
     revalidatePath("/admin/courses");
+    revalidatePath("/admin");
+    revalidatePath("/cursos");
+    revalidatePath("/");
     return { success: "Curso actualizado correctamente" };
   } catch (error) {
     return { error: "Error al actualizar el curso" };
@@ -98,8 +101,7 @@ export async function getInfoCourses(filterAll: boolean = false) {
     const whereClause =
       filterAll && isSuperAdmin
         ? {}
-        : // 🔥 CORRECCIÓN CRÍTICA: Usar session.id (no session.userId)
-          { managers: { some: { userId: session.id } } };
+        : { managers: { some: { userId: session.id } } };
 
     const courses = await prisma.course.findMany({
       where: whereClause,
@@ -183,12 +185,11 @@ export async function getInfoCourses(filterAll: boolean = false) {
   }
 }
 
-import { unstable_noStore as noStore } from "next/cache";
-
 export async function getCourses(limit?: number) {
   noStore();
   try {
     const courses = await prisma.course.findMany({
+      where: { isActive: true },
       orderBy: { createdAt: "desc" },
       take: limit,
       select: {
@@ -212,10 +213,12 @@ export async function getStudentCoursePath(courseId: string, userId: string) {
   try {
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { name: true },
+      select: { name: true, isActive: true },
     });
 
-    if (!course) return { error: "Curso no encontrado", roadmap: [] };
+    if (!course || !course.isActive) {
+      return { error: "Curso no disponible", roadmap: [] };
+    }
 
     const videos = await prisma.courseVideo.findMany({
       where: { courseId: courseId },
@@ -252,6 +255,10 @@ export async function getStudentCoursePath(courseId: string, userId: string) {
   }
 }
 
+/**
+ * Baja lógica del curso (isActive = false).
+ * Permitido para el dueño del curso (owner) o SuperAdmin.
+ */
 export async function deleteCourse(courseId: string) {
   try {
     const session = await getCurrentUser();
@@ -265,14 +272,91 @@ export async function deleteCourse(courseId: string) {
       managerInfo?.roleInCourse !== RoleInCourse.owner &&
       session.role !== Role.superadmin
     ) {
-      return { error: "Sin permisos." };
+      return { error: "Solo el dueño del curso o el SuperAdmin pueden darlo de baja." };
+    }
+
+    await prisma.course.update({
+      where: { id: courseId },
+      data: { isActive: false },
+    });
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin");
+    revalidatePath("/cursos");
+    revalidatePath("/dashboard-estudiante");
+    revalidatePath("/");
+    return { success: "Curso dado de baja correctamente." };
+  } catch (error) {
+    return { error: "Error al dar de baja el curso." };
+  }
+}
+
+/**
+ * Restaura un curso dado de baja lógica (isActive = true).
+ * Permitido para el dueño del curso (owner) o SuperAdmin.
+ */
+export async function restoreCourse(courseId: string) {
+  try {
+    const session = await getCurrentUser();
+    if (!session) return { error: "No autorizado." };
+
+    const managerInfo = await prisma.courseManager.findUnique({
+      where: { courseId_userId: { courseId, userId: session.id } },
+    });
+
+    if (
+      managerInfo?.roleInCourse !== RoleInCourse.owner &&
+      session.role !== Role.superadmin
+    ) {
+      return { error: "Solo el dueño del curso o el SuperAdmin pueden restaurarlo." };
+    }
+
+    await prisma.course.update({
+      where: { id: courseId },
+      data: { isActive: true },
+    });
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/admin");
+    revalidatePath("/cursos");
+    revalidatePath("/dashboard-estudiante");
+    revalidatePath("/");
+    return { success: "Curso restaurado y activado correctamente." };
+  } catch (error) {
+    return { error: "Error al restaurar el curso." };
+  }
+}
+
+/**
+ * Eliminación definitiva del curso y sus registros asociados.
+ * Permitido para el dueño del curso (owner) o SuperAdmin.
+ */
+export async function permanentDeleteCourse(courseId: string) {
+  try {
+    const session = await getCurrentUser();
+    if (!session) return { error: "No autorizado." };
+
+    const managerInfo = await prisma.courseManager.findUnique({
+      where: { courseId_userId: { courseId, userId: session.id } },
+    });
+
+    if (
+      managerInfo?.roleInCourse !== RoleInCourse.owner &&
+      session.role !== Role.superadmin
+    ) {
+      return { error: "Solo el dueño del curso o el SuperAdmin pueden eliminarlo definitivamente." };
     }
 
     await prisma.course.delete({ where: { id: courseId } });
+
     revalidatePath("/admin/courses");
-    return { success: "Curso eliminado." };
+    revalidatePath("/admin");
+    revalidatePath("/cursos");
+    revalidatePath("/dashboard-estudiante");
+    revalidatePath("/");
+    return { success: "Curso eliminado definitivamente." };
   } catch (error) {
-    return { error: "Error al eliminar." };
+    return { error: "Error al eliminar el curso definitivamente." };
   }
 }
 
@@ -298,12 +382,16 @@ export async function createCourse(data: CreateCourse) {
         openEnrollment: new Date(data.openEnrollment),
         deadline: new Date(data.deadline),
         accessCode: accessCode,
+        isActive: true,
         managers: {
           create: { roleInCourse: RoleInCourse.owner, userId: session.id },
         },
       },
     });
     revalidatePath("/admin/courses");
+    revalidatePath("/admin");
+    revalidatePath("/cursos");
+    revalidatePath("/");
     return { success: "Curso creado", code: accessCode };
   } catch (error) {
     console.log("Error al crear", error);

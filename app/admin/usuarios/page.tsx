@@ -250,6 +250,7 @@ export default function UsuariosPage() {
                     </p>
                     <p className="text-[10px] text-white/30 font-mono italic">
                       @{admin.username}
+                      {admin.email ? ` • ${admin.email}` : ""}
                     </p>
                   </div>
                   <ChevronRight
@@ -280,13 +281,18 @@ export default function UsuariosPage() {
                       <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">
                         {selectedAdmin.fullName}
                       </h2>
-                      <div className="flex gap-3 mt-1">
+                      <div className="flex flex-wrap gap-3 mt-1">
                         <span className="text-[10px] font-mono text-[#FF6B00] uppercase bg-[#FF6B00]/10 px-2 py-0.5 rounded-md">
                           Admin
                         </span>
                         <span className="text-[10px] font-mono text-white/40 uppercase">
                           @{selectedAdmin.username}
                         </span>
+                        {selectedAdmin.email && (
+                          <span className="text-[10px] font-mono text-white/40">
+                            {selectedAdmin.email}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

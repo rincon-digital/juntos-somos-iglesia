@@ -5,22 +5,14 @@ import {
   BookOpen,
   FileText,
   Star,
-  ArrowRight,
   Loader2,
   Settings,
   Users,
-  Video,
-  BarChart3,
   TrendingUp,
-  GraduationCap,
-  Calendar,
-  X,
   Trash2,
-  Eye,
   UserCog,
   Shield,
   AlertTriangle,
-  Mail,
   CalendarDays,
   Activity,
   Layers,
@@ -183,8 +175,8 @@ function BentoCourseCard({ course, index, showAdmin = false, onDelete }: { cours
               e.stopPropagation();
               onDelete(course.id);
             }}
-            className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300"
-            title="Eliminar Curso"
+            className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 hover:bg-amber-500 hover:text-black hover:border-amber-500 transition-all duration-300"
+            title="Dar de baja curso"
           >
             <Trash2 size={14} />
           </button>
@@ -431,14 +423,18 @@ export default function AdminStatsPage() {
                   course={course}
                   index={i}
                   showAdmin={isSuperAdmin}
-                  onDelete={isSuperAdmin ? (id) => setConfirmDeleteId(id) : undefined}
+                  onDelete={
+                    isSuperAdmin || course.createdById === user?.id
+                      ? (id) => setConfirmDeleteId(id)
+                      : undefined
+                  }
                 />
               ))
             ) : (
               <div className="col-span-full py-16 text-center border border-white/5 bg-white/[0.01] rounded-[2.5rem] text-white/30 space-y-4">
                 <BookOpen size={48} className="mx-auto opacity-20" />
                 <h4 className="text-lg font-bold uppercase italic tracking-tighter">Sin programas activos</h4>
-                <p className="text-xs text-white/40 max-w-xs mx-auto">No hay cursos de formación cargados en la base de datos de la academia en este momento.</p>
+                <p className="text-xs text-white/40 max-w-xs mx-auto">No hay cursos de formación activos en este momento.</p>
               </div>
             )}
           </div>
@@ -446,7 +442,7 @@ export default function AdminStatsPage() {
 
       </div>
 
-      {/* MODAL CASERO DE CONFIRMACIÓN DE BORRADO DE CURSO (RESPONSIVO Y MODERNO) */}
+      {/* MODAL CASERO DE CONFIRMACIÓN DE BAJA LÓGICA DE CURSO */}
       <AnimatePresence>
         {confirmDeleteId && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -466,16 +462,16 @@ export default function AdminStatsPage() {
               className="relative w-full max-w-md bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl space-y-6 text-center"
             >
               {/* Icono de advertencia animado */}
-              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mx-auto">
                 <AlertTriangle size={28} className="animate-bounce" />
               </div>
               
               <div className="space-y-2">
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">
-                  ¿Eliminar Programa?
+                  ¿Dar de Baja Programa?
                 </h3>
-                <p className="text-xs text-white/40 leading-relaxed max-w-[280px] mx-auto">
-                  Esta acción eliminará de forma permanente el curso seleccionado y todos los registros de alumnos asociados. Esta acción no se puede deshacer.
+                <p className="text-xs text-white/40 leading-relaxed max-w-[300px] mx-auto">
+                  El curso pasará a estado inactivo (baja lógica) y se ocultará del catálogo público y del panel de los alumnos inscritos. Podrás restaurarlo o eliminarlo definitivamente desde Control de Cursos.
                 </p>
               </div>
               
@@ -492,24 +488,24 @@ export default function AdminStatsPage() {
                     setConfirming(true);
                     try {
                       await deleteCourse(confirmDeleteId);
-                      toast.success("Curso eliminado correctamente");
+                      toast.success("Curso dado de baja correctamente");
                       await loadData();
                     } catch (error) {
-                      toast.error("Error al eliminar el curso");
+                      toast.error("Error al dar de baja el curso");
                     } finally {
                       setConfirming(false);
                       setConfirmDeleteId(null);
                     }
                   }}
                   disabled={confirming}
-                  className="flex-1 py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                  className="flex-1 py-4 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-2xl transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                 >
                   {confirming ? (
                     <Loader2 size={12} className="animate-spin" />
                   ) : (
                     <Trash2 size={12} />
                   )}
-                  Confirmar
+                  Sí, dar de baja
                 </button>
               </div>
             </motion.div>

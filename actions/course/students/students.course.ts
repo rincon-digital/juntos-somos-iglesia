@@ -138,6 +138,7 @@ export async function getStudentCoursePath(courseId: string, userId: string) {
       where: { id: courseId },
       select: {
         name: true,
+        isActive: true,
         video: {
           orderBy: { order: "asc" },
           include: {
@@ -150,7 +151,7 @@ export async function getStudentCoursePath(courseId: string, userId: string) {
       },
     });
 
-    if (!coursePath) return null;
+    if (!coursePath || !coursePath.isActive) return null;
 
     // Esta variable DEBE inicializarse en true para que la Etapa 1 siempre esté abierta
     let previousStepCompleted = true;

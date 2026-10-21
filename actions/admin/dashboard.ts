@@ -1,14 +1,15 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { Role, Rank } from "@/lib/types/definitions";
+import { Role, RoleInCourse } from "@/lib/types/definitions";
 import { getCurrentUser } from "../auth/auth";
+import { revalidatePath } from "next/cache";
 
 export async function getDashboardStats() {
   const [totalUsers, totalCourses, totalArticles, totalTestimonies] =
     await Promise.all([
       prisma.user.count(),
-      prisma.course.count(),
+      prisma.course.count({ where: { isActive: true } }),
       prisma.article.count(),
       prisma.testimony.count(),
     ]);
@@ -23,6 +24,7 @@ export async function getDashboardStats() {
 
 export async function getCoursesWithCount() {
   const courses = await prisma.course.findMany({
+    where: { isActive: true },
     include: {
       _count: {
         select: { courseRegistration: true },
@@ -45,6 +47,7 @@ export async function getCoursesWithCount() {
     studentCount: course._count.courseRegistration,
     openEnrollment: course.openEnrollment,
     deadline: course.deadline,
+    isActive: course.isActive,
     createdBy: course.managers[0]?.user.fullName || "Sistema",
     createdById: course.managers[0]?.user.id || null,
   }));
@@ -59,6 +62,7 @@ export async function getAdmins() {
       id: true,
       fullName: true,
       username: true,
+      email: true,
       role: true,
       rank: true,
       createdAt: true,
@@ -103,6 +107,7 @@ export async function getAdminCourses(adminId: string) {
       quotaLimit: mc.course.quotaLimit,
       studentCount: mc.course._count.courseRegistration,
       roleInCourse: mc.roleInCourse,
+      isActive: mc.course.isActive,
       // Aquí está la magia: Listamos a TODOS los que NO sean el dueño actual
       collaborators:
         mc.course.managers
@@ -122,6 +127,7 @@ export async function getAdminCourses(adminId: string) {
         quotaLimit: mc.course.quotaLimit,
         studentCount: mc.course._count.courseRegistration,
         role: "editor",
+        isActive: mc.course.isActive,
         createdBy: owner?.user.fullName || "Sistema",
       };
     });
@@ -170,6 +176,26 @@ export async function deleteCourse(courseId: string) {
     throw new Error("No autorizado");
   }
 
-  await prisma.course.delete({ where: { id: courseId } });
+  const managerInfo = await prisma.courseManager.findUnique({
+    where: { courseId_userId: { courseId, userId: session.id } },
+  });
+
+  if (
+    managerInfo?.roleInCourse !== RoleInCourse.owner &&
+    session.role !== Role.superadmin
+  ) {
+    throw new Error("Sin permisos");
+  }
+
+  await prisma.course.update({
+    where: { id: courseId },
+    data: { isActive: false },
+  });
+
+  revalidatePath("/admin/courses");
+  revalidatePath("/admin");
+  revalidatePath("/cursos");
+  revalidatePath("/dashboard-estudiante");
+  revalidatePath("/");
   return { success: true };
 }

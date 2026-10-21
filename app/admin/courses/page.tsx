@@ -5,15 +5,13 @@ import {
   Users,
   Target,
   TrendingUp,
-  Layers,
   Activity,
   ArrowUpRight,
   ShieldCheck,
-  Plus,
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import CourseCommandCenter from "@/components/admin/Course/CourseCommandCenter";
 
 const containerVars = {
@@ -42,19 +40,24 @@ export default function CoursePage() {
     loadData();
   }, []);
 
-  // --- CÁLCULOS DE DATOS REALES ---
-  const totalStudents = courses.reduce(
+  // --- CÁLCULOS DE DATOS REALES (SOLO CURSOS ACTIVOS) ---
+  const activeCoursesList = courses.filter((c) => c.isActive !== false);
+
+  const totalStudents = activeCoursesList.reduce(
     (acc, c) => acc + (c._count?.courseRegistration || 0),
     0,
   );
-  const totalQuota = courses.reduce((acc, c) => acc + (c.quotaLimit || 0), 0);
+  const totalQuota = activeCoursesList.reduce(
+    (acc, c) => acc + (c.quotaLimit || 0),
+    0,
+  );
   const averageOccupation =
     totalQuota > 0 ? Math.round((totalStudents / totalQuota) * 100) : 0;
-  const activeCourses = courses.length;
 
   // Identificar cursos críticos (casi llenos)
-  const criticalCourses = courses.filter((c) => {
-    const occupation = (c._count?.courseRegistration / c.quotaLimit) * 100;
+  const criticalCourses = activeCoursesList.filter((c) => {
+    const occupation =
+      ((c._count?.courseRegistration || 0) / (c.quotaLimit || 1)) * 100;
     return occupation >= 80;
   }).length;
 
@@ -205,7 +208,7 @@ export default function CoursePage() {
           </p>
           <div className="flex items-center justify-between">
             <h3 className="text-6xl font-black tracking-tighter">
-              {totalQuota - totalStudents}
+              {Math.max(0, totalQuota - totalStudents)}
             </h3>
             <Target size={40} className="text-black/20" />
           </div>
@@ -226,7 +229,6 @@ export default function CoursePage() {
           </div>
         </div>
 
-        {/* El Componente que ya tienes, pero integrado en un contenedor premium */}
         <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-2 md:p-6">
           <CourseCommandCenter />
         </div>
@@ -246,7 +248,7 @@ export default function CoursePage() {
               La ocupación actual del {averageOccupation}% indica un rendimiento
               estable. <br />
               Se recomienda abrir nuevos cursos para los{" "}
-              {totalQuota - totalStudents} cupos restantes.
+              {Math.max(0, totalQuota - totalStudents)} cupos restantes.
             </p>
           </div>
         </div>

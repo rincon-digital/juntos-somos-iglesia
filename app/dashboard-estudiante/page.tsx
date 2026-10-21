@@ -60,7 +60,7 @@ export default function StudentDashboard() {
 
   // ESTADOS DE FORMULARIOS
   const [usernameData, setUsernameData] = useState("");
-  const [contactData, setContactData] = useState({ phone: "", address: "" });
+  const [contactData, setContactData] = useState({ email: "", phone: "", address: "" });
   const [passwords, setPasswords] = useState({
     current: "",
     new: "",
@@ -93,6 +93,7 @@ export default function StudentDashboard() {
     setStudent(data);
     setUsernameData(data.username || "");
     setContactData({
+      email: data.email || "",
       phone: data.profile?.phone || "",
       address: data.profile?.address || "",
     });
@@ -770,6 +771,23 @@ export default function StudentDashboard() {
                   onSubmit={handleContactSubmit}
                   className="space-y-4 animate-in fade-in zoom-in-95 duration-300"
                 >
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      value={contactData.email}
+                      onChange={(e) =>
+                        setContactData({
+                          ...contactData,
+                          email: e.target.value,
+                        })
+                      }
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
                       Teléfono

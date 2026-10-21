@@ -7,10 +7,12 @@ async function main() {
   // Carga de credenciales desde variables de entorno con valores por defecto seguros
   const adminEmail =
     process.env.adminEmail || process.env.ADMIN_EMAIL || "admin@example.com";
+  const adminUsername =
+    process.env.adminUsername || process.env.ADMIN_USERNAME || "admin";
   const adminPassword =
     process.env.adminPassword || process.env.ADMIN_PASSWORD || "12345678";
   const adminName =
-    process.env.adminName || process.env.ADMIN_NAME || "admin";
+    process.env.adminName || process.env.ADMIN_NAME || "Administrador";
 
   console.log("Iniciando el sembrado de datos (seeding)...");
 
@@ -18,14 +20,16 @@ async function main() {
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
   const admin = await prisma.user.upsert({
-    where: { username: adminEmail },
+    where: { username: adminUsername },
     update: {
+      email: adminEmail,
       fullName: adminName,
       password: hashedPassword,
       role: "superadmin",
     },
     create: {
-      username: adminEmail,
+      username: adminUsername,
+      email: adminEmail,
       fullName: adminName,
       password: hashedPassword,
       role: "superadmin",
@@ -33,7 +37,9 @@ async function main() {
     },
   });
 
-  console.log(`Usuario superadministrador listo: ${admin.username}`);
+  console.log(
+    `Usuario superadministrador listo: ${admin.username} (${admin.email})`,
+  );
 }
 
 main()

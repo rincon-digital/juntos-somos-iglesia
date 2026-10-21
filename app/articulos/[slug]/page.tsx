@@ -9,11 +9,17 @@ import {
   MessageCircle, 
   Instagram, 
   Facebook,
-  FileText
+  FileText,
+  Youtube
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { editorStyles } from "@/components/admin/article/RichTextEditor";
+import {
+  getYouTubeID,
+  getYouTubeThumbnail,
+  parseArticleYouTubeUrls,
+} from "@/lib/helpers/article/validationArticle";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -33,6 +39,12 @@ export async function generateMetadata(
   if (!article) return { title: "Artículo no encontrado" };
 
   const previousImages = (await parent).openGraph?.images || [];
+  const youtubeUrls = parseArticleYouTubeUrls(article.youtubeUrls);
+  const coverImage =
+    article.imageUrl ||
+    (youtubeUrls.length > 0
+      ? getYouTubeThumbnail(youtubeUrls[0], "hqdefault")
+      : null);
 
   return {
     title: article.title,
@@ -40,7 +52,7 @@ export async function generateMetadata(
     openGraph: {
       title: article.title,
       description: article.content.replace(/<[^>]*>/g, "").substring(0, 160),
-      images: article.imageUrl ? [article.imageUrl, ...previousImages] : previousImages,
+      images: coverImage ? [coverImage, ...previousImages] : previousImages,
       type: "article",
       authors: [article.author?.fullName || "Juntos Somos Iglesia"],
       publishedTime: article.createdAt.toISOString(),
@@ -49,7 +61,7 @@ export async function generateMetadata(
       card: "summary_large_image",
       title: article.title,
       description: article.content.replace(/<[^>]*>/g, "").substring(0, 160),
-      images: article.imageUrl ? [article.imageUrl] : [],
+      images: coverImage ? [coverImage] : [],
     },
   };
 }
@@ -83,6 +95,13 @@ export default async function ArticleDetailPage({ params }: Props) {
   });
 
   if (!article) notFound();
+
+  const youtubeUrls = parseArticleYouTubeUrls(article.youtubeUrls);
+  const coverImage =
+    article.imageUrl ||
+    (youtubeUrls.length > 0
+      ? getYouTubeThumbnail(youtubeUrls[0], "hqdefault")
+      : null);
 
   const shareUrl = `https://jsioficial.com/articulos/${article.slug}`;
   const shareText = `Lee este artículo: ${article.title}`;
@@ -163,9 +182,9 @@ export default async function ArticleDetailPage({ params }: Props) {
           <div className="w-full md:w-5/12">
             <div className="sticky top-32 space-y-8">
               <div className="relative aspect-[4/5] w-full rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-[#0a0a0a]">
-                {article.imageUrl ? (
+                {coverImage ? (
                   <img 
-                    src={article.imageUrl} 
+                    src={coverImage} 
                     alt={article.title}
                     className="w-full h-full object-cover"
                   />
@@ -225,6 +244,48 @@ export default async function ArticleDetailPage({ params }: Props) {
                 <RichContent html={article.content} />
                </div>
             </div>
+
+            {/* VIDEOS DE YOUTUBE INTEGRADOS */}
+            {youtubeUrls.length > 0 && (
+              <div className="mt-16 pt-12 border-t border-white/10 space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center">
+                    <Youtube size={20} className="text-[#FF6B00]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF6B00]">
+                      Contenido Multimedia
+                    </p>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">
+                      {youtubeUrls.length === 1
+                        ? "Video Relacionado"
+                        : `Videos Relacionados (${youtubeUrls.length})`}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {youtubeUrls.map((url, idx) => {
+                    const videoId = getYouTubeID(url);
+                    if (!videoId) return null;
+                    return (
+                      <div
+                        key={`${videoId}-${idx}`}
+                        className="w-full aspect-video rounded-[2rem] overflow-hidden border border-white/10 bg-black shadow-2xl"
+                      >
+                        <iframe
+                          className="w-full h-full"
+                          src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                          title={`${article.title} - Video ${idx + 1}`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* CTA FINAL / COMPARTIR */}
             <div className="mt-20 p-10 bg-[#FF6B00] rounded-[3rem] text-black relative overflow-hidden group">

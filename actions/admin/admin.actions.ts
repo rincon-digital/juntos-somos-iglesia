@@ -11,6 +11,7 @@ export async function createAdmin(
   password: string,
   fullName: string,
   role: Role,
+  email?: string,
 ) {
   try {
     //VALIDAR SESION
@@ -23,8 +24,16 @@ export async function createAdmin(
       };
     }
 
+    const cleanEmail = email?.trim().toLowerCase() || undefined;
+
     //VALIDAR DATOS
-    const validation = validateAdmin({ username, password, fullName, role });
+    const validation = validateAdmin({
+      username,
+      email: cleanEmail,
+      password,
+      fullName,
+      role,
+    });
     if (!validation.valid) {
       return {
         ok: false,
@@ -50,11 +59,24 @@ export async function createAdmin(
       };
     }
 
+    if (cleanEmail) {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+      if (existingEmail) {
+        return {
+          ok: false,
+          message: JSON.stringify({ email: "Este correo electrónico ya está en uso." }),
+        };
+      }
+    }
+
     //CREAR ADMIN
     const hashedPassword = await hash(password, 10);
     const newAdmin = await prisma.user.create({
       data: {
         username: username.toLowerCase(), // Normalizamos a minúsculas
+        email: cleanEmail || null,
         fullName,
         password: hashedPassword,
         role,
@@ -91,6 +113,7 @@ export async function getAdminProfileData() {
     return {
       fullName: user.fullName,
       username: user.username,
+      email: user.email || "",
       phone: user.profile?.phone || "",
       address: user.profile?.address || "",
     };
@@ -103,6 +126,7 @@ export async function getAdminProfileData() {
 export async function updateAdminProfile(data: {
   fullName: string;
   username: string;
+  email?: string;
 }) {
   try {
     const session = await validateSessionUser(Role.admin);
@@ -115,6 +139,11 @@ export async function updateAdminProfile(data: {
 
     if (!data.fullName.trim()) {
       return { ok: false, message: "El nombre completo es obligatorio." };
+    }
+
+    const cleanEmail = data.email?.trim().toLowerCase() || null;
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return { ok: false, message: "El formato del correo electrónico no es válido." };
     }
 
     // Check if username exists and belongs to someone else
@@ -131,12 +160,25 @@ export async function updateAdminProfile(data: {
       };
     }
 
+    if (cleanEmail) {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+      if (existingEmail && existingEmail.id !== session.userId) {
+        return {
+          ok: false,
+          message: "El correo electrónico ya está en uso por otro usuario.",
+        };
+      }
+    }
+
     // Update User 
     await prisma.user.update({
       where: { id: session.userId },
       data: {
         fullName: data.fullName.trim(),
         username: cleanUsername,
+        email: cleanEmail,
       },
     });
 

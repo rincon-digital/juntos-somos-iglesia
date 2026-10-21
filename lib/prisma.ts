@@ -16,12 +16,23 @@ const prismaClientSingleton = () => {
   return new PrismaClient({ adapter, log: ["query"] });
 };
 
+const PRISMA_SCHEMA_VERSION = "v2_course_isActive";
+
 // Declaramos un tipo para el objeto global para evitar errores de TypeScript
 declare global {
   var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
+  var prismaSchemaVersion: undefined | string;
 }
 
-// Si ya existe la instancia en el objeto global, la usamos; si no, la creamos
+// Si el esquema cambió en caliente (Hot Reload), recreamos el cliente Prisma
+if (
+  globalThis.prismaGlobal &&
+  globalThis.prismaSchemaVersion !== PRISMA_SCHEMA_VERSION
+) {
+  globalThis.prismaGlobal.$disconnect().catch(() => {});
+  globalThis.prismaGlobal = undefined;
+}
+
 const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 export default prisma;
@@ -30,4 +41,5 @@ export default prisma;
 // para que sobreviva a las recargas de código (Hot Reloading)
 if (process.env.NODE_ENV !== "production") {
   globalThis.prismaGlobal = prisma;
+  globalThis.prismaSchemaVersion = PRISMA_SCHEMA_VERSION;
 }

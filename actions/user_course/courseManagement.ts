@@ -8,11 +8,27 @@ import { userRegister } from "../../lib/types/definitions";
 import { validateUser } from "@/lib/helpers/user/validationRegister";
 import { getUsernameSuggestions } from "@/lib/helpers/user/usernameSuggestions";
 import { getCurrentUser } from "../auth/auth";
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  clearRateLimit,
+} from "@/lib/utils/rateLimit";
 
 const secretKey = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function registerCourse(data: userRegister) {
   try {
+    const rateStatus = await checkRateLimit("register_course", data.dni);
+    if (rateStatus.blocked) {
+      return {
+        error:
+          rateStatus.message ||
+          "Demasiados intentos fallidos. Intenta en 3 minutos.",
+        blocked: true,
+        remainingSeconds: rateStatus.remainingSeconds,
+      };
+    }
+
     if (data.fullName !== "EXISTING_USER") {
       const validation = validateUser(data);
       if (!validation.valid) {
@@ -24,12 +40,26 @@ export async function registerCourse(data: userRegister) {
       include: { _count: { select: { courseRegistration: true } } },
     });
 
-    if (!course) return { error: "Curso no encontrado" };
+    if (!course || !course.isActive) {
+      return { error: "Este curso no se encuentra disponible actualmente." };
+    }
     if (course.quotaLimit > 0 && course._count.courseRegistration >= course.quotaLimit) {
       return { error: "Lo sentimos, el cupo para este curso está lleno." };
     }
     if (course.accessCode.trim().toUpperCase() !== data.code.trim().toUpperCase()) {
-      return { error: "El código de acceso no coincide" };
+      const attempt = await recordFailedAttempt("register_course", data.dni);
+      if (attempt.blocked) {
+        return {
+          error:
+            attempt.message ||
+            "Has superado los 5 intentos. Bloqueado por 3 minutos.",
+          blocked: true,
+          remainingSeconds: attempt.remainingSeconds,
+        };
+      }
+      return {
+        error: `El código de acceso no coincide (${attempt.remainingAttempts} intento${attempt.remainingAttempts === 1 ? "" : "s"} restante${attempt.remainingAttempts === 1 ? "" : "s"}).`,
+      };
     }
 
     // BUSCAMOS SI EL USUARIO YA EXISTE
@@ -38,7 +68,7 @@ export async function registerCourse(data: userRegister) {
       include: { user: true },
     });
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       let userId: string;
       let userRole: string;
 
@@ -61,6 +91,7 @@ export async function registerCourse(data: userRegister) {
         userRole = existingUser.user.role;
       } else {
         const hashedPassword = await bcrypt.hash(data.password, 10);
+        const cleanEmail = data.email?.trim().toLowerCase() || null;
 
         // BUSQUEDA INSENSIBLE A MAYÚSCULAS
         const existingUserByUsername = await tx.user.findFirst({
@@ -78,9 +109,20 @@ export async function registerCourse(data: userRegister) {
             JSON.stringify({ type: "USERNAME_TAKEN", suggestions }),
           );
         }
+
+        if (cleanEmail) {
+          const existingUserByEmail = await tx.user.findUnique({
+            where: { email: cleanEmail },
+          });
+          if (existingUserByEmail) {
+            throw new Error("EMAIL_TAKEN");
+          }
+        }
+
         const newUser = await tx.user.create({
           data: {
-            username: data.username,
+            username: data.username.toLowerCase(),
+            email: cleanEmail,
             fullName: data.fullName,
             password: hashedPassword,
             profile: {
@@ -120,14 +162,34 @@ export async function registerCourse(data: userRegister) {
         success: existingUser
           ? "¡Bienvenido de nuevo! Inscripción vinculada."
           : "Registro exitoso",
+        error: undefined,
       };
     });
+
+    await clearRateLimit("register_course", data.dni);
+    return result;
   } catch (error: any) {
-    if (error.message === "AUTH_FAILED")
+    if (error.message === "AUTH_FAILED") {
+      const attempt = await recordFailedAttempt("register_course", data.dni);
+      if (attempt.blocked) {
+        return {
+          error:
+            attempt.message ||
+            "Has superado los 5 intentos. Bloqueado por 3 minutos.",
+          blocked: true,
+          remainingSeconds: attempt.remainingSeconds,
+        };
+      }
       return {
-        error:
-          "Este DNI ya existe. Ingresa la contraseña correcta de tu cuenta anterior.",
+        error: `Este DNI ya existe. Ingresa la contraseña correcta de tu cuenta anterior (${attempt.remainingAttempts} intento${attempt.remainingAttempts === 1 ? "" : "s"} restante${attempt.remainingAttempts === 1 ? "" : "s"}).`,
       };
+    }
+
+    if (error.message === "EMAIL_TAKEN") {
+      return {
+        error: "Este correo electrónico ya está registrado en otra cuenta.",
+      };
+    }
 
     try {
       const parsedError = JSON.parse(error.message);
@@ -170,22 +232,43 @@ export async function checkUsernameAvailability(username: string) {
 
 export async function verifyCourseCodeOnly(courseId: string, code: string) {
   try {
+    const rateStatus = await checkRateLimit("verify_course_code", courseId);
+    if (rateStatus.blocked) {
+      return {
+        error:
+          rateStatus.message ||
+          "Demasiados intentos fallidos. Intenta en 3 minutos.",
+        blocked: true,
+        remainingSeconds: rateStatus.remainingSeconds,
+      };
+    }
+
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { accessCode: true },
+      select: { accessCode: true, isActive: true },
     });
 
-    if (!course) return { error: `Curso no encontrado. ID recibido: ${courseId}` };
+    if (!course || !course.isActive) {
+      return { error: "Este curso no se encuentra disponible." };
+    }
 
-    console.log("VERIFY CODE:", {
-      courseId,
-      expectedCode: course.accessCode,
-      receivedCode: code
-    });
+    if (course.accessCode.trim().toUpperCase() !== code.trim().toUpperCase()) {
+      const attempt = await recordFailedAttempt("verify_course_code", courseId);
+      if (attempt.blocked) {
+        return {
+          error:
+            attempt.message ||
+            "Has superado los 5 intentos. Bloqueado por 3 minutos.",
+          blocked: true,
+          remainingSeconds: attempt.remainingSeconds,
+        };
+      }
+      return {
+        error: `El código de acceso es incorrecto (${attempt.remainingAttempts} intento${attempt.remainingAttempts === 1 ? "" : "s"} restante${attempt.remainingAttempts === 1 ? "" : "s"}).`,
+      };
+    }
 
-    if (course.accessCode.trim().toUpperCase() !== code.trim().toUpperCase())
-      return { error: "El código de acceso es incorrecto." };
-
+    await clearRateLimit("verify_course_code", courseId);
     return { success: true };
   } catch (error) {
     console.error("VERIFY CODE ERROR:", error);
@@ -207,10 +290,11 @@ export async function getAvailableCoursesForStudent() {
 
     const enrolledIds = enrolledCourses.map(e => e.courseId);
 
-    // Obtenemos los cursos DISPONIBLES (que no esté inscripto)
+    // Obtenemos los cursos DISPONIBLES y ACTIVOS (que no esté inscripto)
     const availableCourses = await prisma.course.findMany({
       where: {
         id: { notIn: enrolledIds },
+        isActive: true,
       },
       select: {
         id: true,
@@ -234,19 +318,26 @@ export async function quickEnrollCourse(courseId: string, code: string) {
     const session = await getCurrentUser();
     if (!session) return { error: "No autorizado" };
 
+    const rateKey = `${session.id}:${courseId}`;
+    const rateStatus = await checkRateLimit("quick_enroll", rateKey);
+    if (rateStatus.blocked) {
+      return {
+        error:
+          rateStatus.message ||
+          "Demasiados intentos fallidos. Intenta en 3 minutos.",
+        blocked: true,
+        remainingSeconds: rateStatus.remainingSeconds,
+      };
+    }
+
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       include: { _count: { select: { courseRegistration: true } } },
     });
 
-    if (!course) return { error: "Curso no encontrado" };
-    
-    console.log("QUICK ENROLL CHECK:", {
-      providedCode: code,
-      actualCode: course.accessCode,
-      quotaLimit: course.quotaLimit,
-      registered: course._count.courseRegistration
-    });
+    if (!course || !course.isActive) {
+      return { error: "Este curso no se encuentra disponible." };
+    }
 
     // Permitir límite 0 como infinito
     if (course.quotaLimit > 0 && course._count.courseRegistration >= course.quotaLimit) {
@@ -254,7 +345,19 @@ export async function quickEnrollCourse(courseId: string, code: string) {
     }
     
     if (course.accessCode.trim().toUpperCase() !== code.trim().toUpperCase()) {
-      return { error: "El código de acceso es incorrecto." };
+      const attempt = await recordFailedAttempt("quick_enroll", rateKey);
+      if (attempt.blocked) {
+        return {
+          error:
+            attempt.message ||
+            "Has superado los 5 intentos. Bloqueado por 3 minutos.",
+          blocked: true,
+          remainingSeconds: attempt.remainingSeconds,
+        };
+      }
+      return {
+        error: `El código de acceso es incorrecto (${attempt.remainingAttempts} intento${attempt.remainingAttempts === 1 ? "" : "s"} restante${attempt.remainingAttempts === 1 ? "" : "s"}).`,
+      };
     }
 
     const alreadyInCourse = await prisma.courseRegistration.findFirst({
@@ -270,6 +373,7 @@ export async function quickEnrollCourse(courseId: string, code: string) {
       }
     });
 
+    await clearRateLimit("quick_enroll", rateKey);
     revalidatePath("/dashboard-estudiante");
     return { success: "¡Inscripción exitosa!" };
   } catch (error) {

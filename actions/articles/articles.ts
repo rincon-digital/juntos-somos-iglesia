@@ -1,7 +1,10 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { validationDataArticle } from "@/lib/helpers/article/validationArticle";
+import {
+  validationDataArticle,
+  parseArticleYouTubeUrls,
+} from "@/lib/helpers/article/validationArticle";
 import { uploadToImgBB } from "@/lib/utils/uploadImage";
 import { revalidatePath } from "next/cache";
 import { validateSessionUser } from "../user";
@@ -21,12 +24,21 @@ export async function createArticle(formData: FormData) {
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const imageFile = formData.get("image") as File | null;
+  const rawYoutubeUrls = formData.get("youtubeUrls");
+  const youtubeUrls = parseArticleYouTubeUrls(rawYoutubeUrls);
 
-  console.log("Datos recibidos en createArticle:", { title, content: content.substring(0, 20) + "..." });
-  console.log("Archivo de imagen recibido:", imageFile ? { name: imageFile.name, size: imageFile.size, type: imageFile.type } : "Sin imagen");
+  console.log("Datos recibidos en createArticle:", {
+    title,
+    content: content?.substring(0, 20) + "...",
+    youtubeUrlsCount: youtubeUrls.length,
+  });
 
-  // 3. Validaciones de datos de texto
-  const { valid, error } = validationDataArticle({ title, content });
+  // 3. Validaciones de datos de texto y enlaces de YouTube
+  const { valid, error } = validationDataArticle({
+    title,
+    content,
+    youtubeUrls,
+  });
   if (!valid) return { error };
 
   // 2. Obtener usuario logueado
@@ -59,9 +71,14 @@ export async function createArticle(formData: FormData) {
         slug: generateSlug(title),
         content,
         imageUrl: imageUrl,
+        youtubeUrls: youtubeUrls.length > 0 ? youtubeUrls : [],
         authorId: user.id,
       },
     });
+
+    revalidatePath("/articulos");
+    revalidatePath("/admin/articles");
+    revalidatePath("/");
 
     return { success: "Artículo publicado correctamente" };
   } catch (err) {
@@ -120,7 +137,7 @@ export async function getArticleBySlug(slug: string) {
 // EDITAR ARTICULO (Solo dueño o Admin)
 export async function updateArticle(
   articleId: string,
-  formData: { title: string; content: string },
+  formData: { title: string; content: string; youtubeUrls?: string[] },
 ) {
   try {
     // 1. VALIDACION DE USUARIO
@@ -146,17 +163,31 @@ export async function updateArticle(
     // 3. Obtener y validar datos del formData
     const title = formData.title;
     const content = formData.content;
+    const youtubeUrls = parseArticleYouTubeUrls(formData.youtubeUrls);
 
-    const { valid, error } = validationDataArticle({ title, content });
+    const { valid, error } = validationDataArticle({
+      title,
+      content,
+      youtubeUrls,
+    });
     if (!valid) return { error };
 
     // 5. Actualizar
     await prisma.article.update({
       where: { id: articleId },
-      data: { title, content },
+      data: {
+        title,
+        content,
+        ...(formData.youtubeUrls !== undefined
+          ? { youtubeUrls }
+          : {}),
+      },
     });
 
     revalidatePath("/articles");
+    revalidatePath("/articulos");
+    revalidatePath("/admin/articles");
+    revalidatePath("/");
     return { success: "Artículo actualizado correctamente" };
   } catch (err) {
     console.error(err);
