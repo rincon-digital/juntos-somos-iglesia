@@ -61,12 +61,12 @@ export default function Cursos({
   }, [selectedCurso, showRegister, onModalChange]);
 
   return (
-    <section id="cursos" className="py-24 bg-transparent text-white px-6">
-      <Toaster position="bottom-right" richColors theme="dark" style={{ zIndex: 9999 }} />
+    <section id="cursos" className="py-24 bg-transparent text-[#0a0a0a] px-6">
+      <Toaster position="bottom-right" richColors theme="light" style={{ zIndex: 9999 }} />
       <div className="max-w-7xl mx-auto">
         <header className="mb-16">
           <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase leading-[0.8]">
-            PROGRAMAS DE <span className="text-[#FF6B00]">FORMACIÓN</span>
+            PROGRAMAS DE <span className="text-[#EA580C]">FORMACIÓN</span>
           </h2>
         </header>
 
@@ -91,7 +91,7 @@ export default function Cursos({
                   setSelectedCurso(curso);
                   setShowRegister(true);
                 }}
-                className="group relative bg-[#0d0d0d] border border-white/5 rounded-[2.5rem] hover:border-[#FF6B00]/40 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col"
+                className="group relative bg-white border border-[#e7e5e4] rounded-[2.5rem] hover:border-[#FF6B00]/40 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col"
               >
                 {/* Decoración de fondo */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B00]/5 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:bg-[#FF6B00]/10 transition-all" />
@@ -104,44 +104,44 @@ export default function Cursos({
                         <div className="w-10 h-10 bg-[#FF6B00]/10 rounded-xl flex items-center justify-center group-hover:bg-[#FF6B00] transition-colors duration-500">
                           <GraduationCap
                             size={18}
-                            className="text-[#FF6B00] group-hover:text-white transition-colors"
+                            className="text-[#C2410C] group-hover:text-white transition-colors"
                           />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF6B00]/60">
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#C2410C]">
                           Programa Activo
                         </span>
                       </div>
                       
-                      <h3 className="text-2xl md:text-3xl font-black uppercase italic leading-none text-white group-hover:text-[#FF6B00] transition-colors">
+                      <h3 className="text-2xl md:text-3xl font-black uppercase italic leading-none text-[#0a0a0a] group-hover:text-[#C2410C] transition-colors">
                         {curso.name}
                       </h3>
                       
-                      <p className="text-white/40 text-sm leading-relaxed line-clamp-2 pr-4">
+                      <p className="text-[#57534e] text-sm leading-relaxed line-clamp-2 pr-4">
                         {curso.description}
                       </p>
                     </div>
 
                     {/* LADO DERECHO: DISPONIBILIDAD */}
-                    <div className="flex flex-row md:flex-col justify-between md:justify-center gap-6 md:gap-4 md:pl-8 md:border-l border-white/5 w-full md:w-48 shrink-0">
+                    <div className="flex flex-row md:flex-col justify-between md:justify-center gap-6 md:gap-4 md:pl-8 md:border-l border-[#e7e5e4] w-full md:w-48 shrink-0">
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#57534e]">
                           Cierre de Inscripción
                         </p>
-                        <p className="text-sm font-bold text-white uppercase italic">
+                        <p className="text-sm font-bold text-[#0a0a0a] uppercase italic">
                           {deadline}
                         </p>
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-[#57534e]">
                           Cupos (Inscritos/Total)
                         </p>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-[#FF6B00]">
+                          <span className="text-2xl font-black text-[#C2410C]">
                             {registered}
                           </span>
-                          <span className="text-sm font-bold text-white/20">/</span>
-                          <span className="text-lg font-black text-white/60">
+                          <span className="text-sm font-bold text-[#57534e]">/</span>
+                          <span className="text-lg font-black text-[#57534e]">
                             {quota}
                           </span>
                         </div>
@@ -152,11 +152,11 @@ export default function Cursos({
 
                 {/* BOTÓN INFERIOR */}
                 <div className="px-8 pb-8 md:px-10 md:pb-10">
-                  <div className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 group-hover:bg-[#FF6B00] group-hover:border-[#FF6B00] transition-all duration-500">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white group-hover:text-black">
+                  <div className="w-full py-4 bg-[#f5f5f4] border border-[#e7e5e4] rounded-2xl flex items-center justify-center gap-3 group-hover:bg-[#FF6B00] group-hover:border-[#FF6B00] transition-all duration-500">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0a0a0a] group-hover:text-black">
                       Inscribirme Ahora
                     </span>
-                    <ArrowUpRight size={16} className="text-[#FF6B00] group-hover:text-black" />
+                    <ArrowUpRight size={16} className="text-[#C2410C] group-hover:text-black" />
                   </div>
                 </div>
               </motion.div>
@@ -174,13 +174,13 @@ export default function Cursos({
           >
             <Link
               href="/cursos"
-              className="group flex items-center gap-4 bg-white/[0.02] hover:bg-[#FF6B00] border border-white/5 hover:border-[#FF6B00] px-8 py-4 rounded-2xl transition-all duration-500"
+              className="group flex items-center gap-4 bg-[#f5f5f4] hover:bg-[#FF6B00] border border-[#e7e5e4] hover:border-[#FF6B00] px-8 py-4 rounded-2xl transition-all duration-500"
             >
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#0a0a0a]">
                 Explorar todos los cursos
               </span>
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-black/20 transition-colors">
-                <ArrowUpRight size={16} className="text-white" />
+              <div className="w-8 h-8 rounded-full bg-[#f5f5f4] flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                <ArrowUpRight size={16} className="text-[#0a0a0a]" />
               </div>
             </Link>
           </motion.div>

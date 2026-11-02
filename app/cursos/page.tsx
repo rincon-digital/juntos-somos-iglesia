@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 
 export default function CursosPage() {
   return (
-    <main className="min-h-screen bg-[#080808] relative overflow-x-hidden">
+    <main className="min-h-screen bg-white text-[#0a0a0a] relative overflow-x-hidden">
       {/* Navbar fija */}
       <div className="fixed top-0 left-0 right-0 transition-all duration-700 z-[100]">
         <Navbar />

@@ -17,7 +17,7 @@ interface PredicaItem {
   nota?: string;
 }
 
-const PREDICAS_LISTA: PredicaItem[] = [
+export const PREDICAS_LISTA: PredicaItem[] = [
   {
     dia: "Lunes",
     titulo: "Ayuno",

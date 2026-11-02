@@ -51,12 +51,18 @@ export default function Navbar() {
       }`}
     >
       <nav
-        className={`flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 transition-all duration-500 shadow-2xl ${
+        className={`flex justify-between items-center relative w-full max-w-5xl transition-all duration-500 ${
           isScrolled
-            ? "px-5 py-2 rounded-full max-w-3xl border-white/20"
+            ? "px-5 py-2 rounded-full max-w-3xl"
             : "px-8 py-4 rounded-[2rem] md:rounded-full"
         }`}
       >
+        {/* VIDRIO: va aparte porque backdrop-filter en el nav encerraría al menú móvil */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 rounded-[inherit] border border-white/70 bg-white/95 shadow-[0_8px_30px_rgba(0,0,0,0.1)] md:bg-white/55 md:backdrop-blur-xl md:backdrop-saturate-150"
+        />
+
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-3 group">
           <div
@@ -74,12 +80,12 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col leading-none">
             {!isScrolled && (
-              <span className="text-white/40 font-black uppercase text-[8px] tracking-tighter">
+              <span className="text-[#57534e] font-black uppercase text-[8px] tracking-tighter">
                 JUNTOS SOMOS
               </span>
             )}
             <span
-              className={`text-[#FF6B00] font-black uppercase tracking-tighter italic transition-all ${
+              className={`text-[#C2410C] font-black uppercase tracking-tighter italic transition-all ${
                 isScrolled ? "text-sm" : "text-lg"
               }`}
             >
@@ -94,7 +100,7 @@ export default function Navbar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`px-4 py-2 text-white/50 hover:text-white transition-all font-bold uppercase tracking-[0.2em] ${
+              className={`px-4 py-2 text-[#44403c] hover:text-black transition-all font-bold uppercase tracking-[0.2em] ${
                 isScrolled ? "text-[8px]" : "text-[10px]"
               }`}
             >
@@ -107,7 +113,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className={`flex items-center justify-center bg-white text-black hover:bg-[#FF6B00] hover:text-white font-black uppercase tracking-widest transition-all ${
+            className={`flex items-center justify-center bg-[#0a0a0a] text-white hover:bg-[#FF6B00] hover:text-black font-black uppercase tracking-widest transition-all ${
               isScrolled
                 ? "w-8 h-8 rounded-full sm:w-auto sm:h-auto sm:px-4 sm:py-1.5 sm:text-[8px] sm:gap-2"
                 : "w-10 h-10 rounded-full sm:w-auto sm:h-auto sm:px-6 sm:py-2.5 sm:text-[10px] sm:gap-2"
@@ -123,9 +129,9 @@ export default function Navbar() {
             onClick={() => setIsOpen(!isOpen)}
             className={`lg:hidden rounded-full flex items-center justify-center transition-all ${
               isScrolled
-                ? "w-8 h-8 bg-white/10"
-                : "w-10 h-10 bg-white/5 border border-white/10"
-            } ${isOpen ? "bg-[#FF6B00] text-black" : "text-white"}`}
+                ? "w-8 h-8 bg-black/5"
+                : "w-10 h-10 bg-black/5 border border-black/10"
+            } ${isOpen ? "bg-[#FF6B00] text-black" : "text-[#0a0a0a]"}`}
           >
             {isOpen ? <X size={16} /> : <Menu size={16} />}
           </button>

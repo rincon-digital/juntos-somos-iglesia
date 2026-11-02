@@ -59,19 +59,19 @@ export default function TestimoniosSection({
   }, [selectedTestimonio, onModalChange]);
 
   return (
-    <section className="relative w-full py-24 md:py-32 px-4 md:px-10 overflow-hidden bg-[#050505] z-20">
+    <section className="relative w-full py-24 md:py-32 px-4 md:px-10 overflow-hidden bg-white text-[#0a0a0a] z-20">
       {/* ENCABEZADO DE TESTIMONIOS */}
       <div className="max-w-4xl mx-auto text-center mb-16 md:mb-24 relative z-10">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <MessageSquareQuote className="text-[#FF6B00]" size={16} />
-          <span className="text-[#FF6B00] font-mono text-[10px] tracking-[0.3em] uppercase font-black">
+          <MessageSquareQuote className="text-[#C2410C]" size={16} />
+          <span className="text-[#C2410C] font-mono text-[10px] tracking-[0.3em] uppercase font-black">
             Nuestra Comunidad
           </span>
         </div>
         <h2 className="text-[10vw] md:text-[6vw] font-black uppercase leading-[0.85] tracking-tighter italic mb-6">
-          VIDAS <span className="text-white/10 outline-text">TRANSFORMADAS</span>
+          VIDAS <span className="text-[#78716c]">TRANSFORMADAS</span>
         </h2>
-        <p className="text-white/50 text-sm md:text-base max-w-2xl mx-auto font-medium">
+        <p className="text-[#57534e] text-sm md:text-base max-w-2xl mx-auto font-medium">
           Descubre lo que Dios está haciendo en el corazón de nuestra iglesia a través de experiencias reales.
         </p>
       </div>
@@ -81,7 +81,7 @@ export default function TestimoniosSection({
           {[...Array(limit || 3)].map((_, i) => (
             <div
               key={i}
-              className="h-[350px] bg-white/[0.02] border border-white/5 rounded-[3rem] animate-pulse"
+              className="h-[350px] bg-[#f5f5f4] border border-[#e7e5e4] rounded-[3rem] animate-pulse"
             />
           ))}
         </div>
@@ -101,15 +101,15 @@ export default function TestimoniosSection({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-20 px-6 border border-white/5 bg-white/[0.02] rounded-[3rem] text-center"
+          className="flex flex-col items-center justify-center py-20 px-6 border border-[#e7e5e4] bg-[#f5f5f4] rounded-[3rem] text-center"
         >
-          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-            <MessageSquareQuote size={40} className="text-white/20" />
+          <div className="w-20 h-20 bg-[#f5f5f4] rounded-full flex items-center justify-center mb-6">
+            <MessageSquareQuote size={40} className="text-[#57534e]" />
           </div>
-          <h3 className="text-2xl font-bold text-white mb-2 uppercase italic tracking-tighter">
+          <h3 className="text-2xl font-bold text-[#0a0a0a] mb-2 uppercase italic tracking-tighter">
             Próximamente más experiencias
           </h3>
-          <p className="text-white/40 max-w-sm text-sm font-medium">
+          <p className="text-[#57534e] max-w-sm text-sm font-medium">
             Aún no hay testimonios, vuelve pronto para leer lo que Dios está
             haciendo en la vida de nuestros hermanos.
           </p>
@@ -190,32 +190,32 @@ function TestimonioCard({ testimonio, index, onClick }: any) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="relative group cursor-pointer bg-white/[0.02] border border-white/5 rounded-[3rem] overflow-hidden hover:bg-white/[0.04] hover:border-[#FF6B00]/30 transition-all duration-500 shadow-2xl flex flex-col h-[350px]"
+      className="relative group cursor-pointer bg-[#f5f5f4] border border-[#e7e5e4] rounded-[3rem] overflow-hidden hover:bg-[#f5f5f4] hover:border-[#FF6B00]/30 transition-all duration-500 shadow-[0_12px_30px_rgba(0,0,0,0.06)] flex flex-col h-[350px]"
       onClick={onClick}
     >
       <div className="p-8 md:p-10 flex flex-col h-full relative z-10">
-        <Quote className="absolute top-8 right-8 text-white/[0.03] w-20 h-20 group-hover:text-[#FF6B00]/10 transition-colors duration-500 rotate-12 pointer-events-none" />
+        <Quote className="absolute top-8 right-8 text-black/5 w-20 h-20 group-hover:text-[#C2410C]/10 transition-colors duration-500 rotate-12 pointer-events-none" />
         <div className="mb-6 flex-1 overflow-hidden">
-          <p className="text-lg font-medium text-white/80 italic leading-relaxed line-clamp-4 group-hover:text-white transition-colors">
+          <p className="text-lg font-medium text-[#292524] italic leading-relaxed line-clamp-4 group-hover:text-[#0a0a0a] transition-colors">
             "{testimonio.content}"
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/30 group-hover:text-[#FF6B00] transition-colors mb-6">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#57534e] group-hover:text-[#C2410C] transition-colors mb-6">
           Leer Testimonio Completo{" "}
           <ArrowRight
             size={14}
             className="group-hover:translate-x-2 transition-transform"
           />
         </div>
-        <div className="flex items-center gap-4 border-t border-white/10 pt-6 mt-auto">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-white/10 flex items-center justify-center font-black text-[#FF6B00] text-lg uppercase shadow-inner shrink-0">
+        <div className="flex items-center gap-4 border-t border-[#e7e5e4] pt-6 mt-auto">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#e7e5e4] flex items-center justify-center font-black text-[#C2410C] text-lg uppercase shadow-inner shrink-0">
             {testimonio.author?.fullName?.charAt(0) || "F"}
           </div>
           <div className="min-w-0">
-            <h4 className="text-sm font-bold tracking-widest uppercase text-white truncate">
+            <h4 className="text-sm font-bold tracking-widest uppercase text-[#0a0a0a] truncate">
               {testimonio.author?.fullName || "Fiel"}
             </h4>
-            <p className="text-[9px] text-[#FF6B00] font-black tracking-[0.2em] uppercase mt-1 truncate">
+            <p className="text-[9px] text-[#C2410C] font-black tracking-[0.2em] uppercase mt-1 truncate">
               {testimonio.author?.rank || "Congregante"}
             </p>
           </div>
