@@ -3,15 +3,12 @@ import { useEffect, useState } from "react";
 import { getArticles } from "@/actions/articles/articles";
 import ArticleCard from "@/components/admin/article/ArticleCard";
 import CreateArticle from "@/components/admin/article/CreateArticle";
-import { Search } from "lucide-react"; // Saqué el Plus porque ya está en CreateArticle
+import { Search } from "lucide-react";
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Estado para el modal de lectura
-  const [readingArticle, setReadingArticle] = useState<any | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -29,57 +26,51 @@ export default function ArticlesPage() {
   );
 
   return (
-    <div className="w-full space-y-8 p-1">
-      {/* CABECERA */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="space-y-6 py-2 text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
+      <header className="flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">
-            Artículos
-          </h2>
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-0.5">
-            {articles.length} publicaciones editoriales
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">Artículos</h1>
+          <p className="mt-1 text-[#57534e]">
+            {articles.length} {articles.length === 1 ? "publicado" : "publicados"} en la web. Tocá uno para leerlo o editarlo.
           </p>
         </div>
-
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-72 group">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#FF6B00] transition-colors"
-              size={15}
-            />
+        <div className="flex items-center gap-3">
+          <div className="relative w-72">
+            <label htmlFor="buscar-articulo" className="sr-only">Buscar artículo</label>
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]" size={16} aria-hidden="true" />
             <input
-              type="text"
-              placeholder="BUSCAR ARTÍCULO..."
+              id="buscar-articulo"
+              type="search"
+              placeholder="Buscar artículo…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0f0f0f] border border-white/[0.08] rounded-xl py-3 pl-11 pr-4 text-[10px] font-bold uppercase tracking-widest text-white placeholder:text-white/20 outline-none focus:border-[#FF6B00]/40 transition-all"
+              className="h-12 w-full rounded-full border border-[#e7e5e4] bg-white pl-11 pr-4 text-sm outline-none transition-[border-color,box-shadow] hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30"
             />
           </div>
-
-          {/* ✅ ACÁ AGREGAMOS TU COMPONENTE REAL */}
           <CreateArticle onRefresh={loadData} />
         </div>
-      </div>
+      </header>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {loading
-          ? [1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-96 bg-white/5 rounded-[2.5rem] animate-pulse border border-white/5"
-              />
-            ))
-          : filteredArticles.map((article) => (
-              <div
-                key={article.id}
-                onClick={() => setReadingArticle(article)}
-                className="cursor-pointer"
-              >
-                <ArticleCard article={article} onRefresh={loadData} />
-              </div>
-            ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-3 gap-5" aria-busy="true">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-80 animate-pulse rounded-[1.75rem] bg-[#f5f5f4]" />
+          ))}
+        </div>
+      ) : filteredArticles.length === 0 ? (
+        <div className="rounded-[1.75rem] border border-[#e7e5e4] bg-white px-6 py-16 text-center">
+          <p className="font-semibold">{searchQuery ? "No hay artículos con ese título" : "Todavía no hay artículos"}</p>
+          <p className="mt-1 text-sm text-[#57534e]">
+            {searchQuery ? "Probá con otra palabra." : "Publicá el primero con “Nuevo artículo”."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-5">
+          {filteredArticles.map((article) => (
+            <ArticleCard key={article.id} article={article} onRefresh={loadData} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

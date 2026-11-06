@@ -1,27 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Quote, X, ArrowRight, MessageSquareQuote } from "lucide-react"; // Importado MessageSquareQuote para el icono vacío
+import { motion } from "framer-motion";
 import { getTestimonies } from "@/actions/testimony/testimony";
 
 interface TestimoniosProps {
+  // Se mantiene por compatibilidad: la sección ya no abre modales
   onModalChange?: (isOpen: boolean) => void;
   limit?: number;
 }
 
-export default function TestimoniosSection({
-  onModalChange,
-  limit,
-}: TestimoniosProps) {
+export default function TestimoniosSection({ limit }: TestimoniosProps) {
   const [testimonios, setTestimonios] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTestimonio, setSelectedTestimonio] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -38,189 +28,60 @@ export default function TestimoniosSection({
     loadData();
   }, [limit]);
 
-  useEffect(() => {
-    const isModalOpen = !!selectedTestimonio;
-    if (onModalChange) onModalChange(isModalOpen);
-
-    if (isModalOpen) {
-      const scrollBarWidth =
-        window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollBarWidth}px`;
-    } else {
-      document.body.style.overflow = "auto";
-      document.body.style.paddingRight = "0px";
-    }
-
-    return () => {
-      document.body.style.overflow = "auto";
-      document.body.style.paddingRight = "0px";
-    };
-  }, [selectedTestimonio, onModalChange]);
-
   return (
-    <section className="relative w-full py-24 md:py-32 px-4 md:px-10 overflow-hidden bg-white text-[#0a0a0a] z-20">
-      {/* ENCABEZADO DE TESTIMONIOS */}
-      <div className="max-w-4xl mx-auto text-center mb-16 md:mb-24 relative z-10">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <MessageSquareQuote className="text-[#C2410C]" size={16} />
-          <span className="text-[#C2410C] font-mono text-[10px] tracking-[0.3em] uppercase font-black">
-            Nuestra Comunidad
-          </span>
-        </div>
-        <h2 className="text-[10vw] md:text-[6vw] font-black uppercase leading-[0.85] tracking-tighter italic mb-6">
-          VIDAS <span className="text-[#78716c]">TRANSFORMADAS</span>
-        </h2>
-        <p className="text-[#57534e] text-sm md:text-base max-w-2xl mx-auto font-medium">
-          Descubre lo que Dios está haciendo en el corazón de nuestra iglesia a través de experiencias reales.
-        </p>
-      </div>
-      {/* CONTENIDO DE TESTIMONIOS */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {[...Array(limit || 3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-[350px] bg-[#f5f5f4] border border-[#e7e5e4] rounded-[3rem] animate-pulse"
-            />
-          ))}
-        </div>
-      ) : testimonios.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {testimonios.map((testimonio, index) => (
-            <TestimonioCard
-              key={testimonio.id}
-              testimonio={testimonio}
-              index={index}
-              onClick={() => setSelectedTestimonio(testimonio)}
-            />
-          ))}
-        </div>
-      ) : (
-        /* ESTADO VACÍO (ESTILO UNIFICADO) */
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-20 px-6 border border-[#e7e5e4] bg-[#f5f5f4] rounded-[3rem] text-center"
-        >
-          <div className="w-20 h-20 bg-[#f5f5f4] rounded-full flex items-center justify-center mb-6">
-            <MessageSquareQuote size={40} className="text-[#57534e]" />
-          </div>
-          <h3 className="text-2xl font-bold text-[#0a0a0a] mb-2 uppercase italic tracking-tighter">
-            Próximamente más experiencias
-          </h3>
-          <p className="text-[#57534e] max-w-sm text-sm font-medium">
-            Aún no hay testimonios, vuelve pronto para leer lo que Dios está
-            haciendo en la vida de nuestros hermanos.
+    <section className="relative z-20 bg-white px-6 py-24 text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-12 max-w-xl">
+          <h2 className="text-4xl font-semibold tracking-[-0.03em] text-balance md:text-5xl">
+            Vidas transformadas
+          </h2>
+          <p className="mt-3 text-base text-[#57534e]">
+            Lo que Dios está haciendo en la vida de nuestros hermanos, contado por ellos.
           </p>
-        </motion.div>
-      )}
+        </header>
 
-      {/* ================= MODAL TESTIMONIO ================= */}
-      <AnimatePresence>
-        {mounted &&
-          selectedTestimonio &&
-          createPortal(
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedTestimonio(null)}
-              className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-12 overscroll-none"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-3xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+        {isLoading ? (
+          <div className="columns-1 gap-6 md:columns-2 lg:columns-3">
+            {[...Array(limit || 3)].map((_, i) => (
+              <div
+                key={i}
+                className="mb-6 h-36 break-inside-avoid animate-pulse rounded-[2rem] bg-[#f5f5f4]"
+              />
+            ))}
+          </div>
+        ) : testimonios.length > 0 ? (
+          // Cada tarjeta toma el ancho de su contenido, hasta un máximo
+          <div className="flex flex-wrap items-start justify-center gap-6">
+            {testimonios.map((testimonio, index) => (
+              <motion.figure
+                key={testimonio.id}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: index * 0.06, ease: [0.23, 1, 0.32, 1] }}
+                className="w-fit max-w-full [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.12))_drop-shadow(0_14px_28px_rgba(0,0,0,0.16))] sm:max-w-[26rem]"
               >
-                <button
-                  onClick={() => setSelectedTestimonio(null)}
-                  className="absolute top-6 right-6 z-[6000] w-10 h-10 bg-black/40 hover:bg-[#FF6B00] backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center transition-all duration-300 group"
-                >
-                  <X
-                    size={20}
-                    className="text-white group-hover:scale-110 transition-transform"
-                  />
-                </button>
-
-                <div
-                  className="p-8 sm:p-12 overflow-y-auto custom-scrollbar relative flex-1 overscroll-contain"
-                  onWheel={(e) => e.stopPropagation()}
-                  onTouchMove={(e) => e.stopPropagation()}
-                >
-                  <Quote className="text-white/5 w-24 h-24 absolute top-8 right-8 -rotate-12 pointer-events-none" />
-
-                  <div className="flex items-center gap-6 mb-10 pb-10 border-b border-white/10 pr-12">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#FF6B00]/30 flex items-center justify-center font-black text-[#FF6B00] text-3xl uppercase shadow-inner shrink-0">
-                      {selectedTestimonio.author?.fullName?.charAt(0) || "F"}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-1">
-                        {selectedTestimonio.author?.fullName || "Fiel"}
-                      </h3>
-                      <p className="text-[10px] text-[#FF6B00] font-black tracking-[0.3em] uppercase">
-                        {selectedTestimonio.author?.rank || "Congregante"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="prose prose-invert max-w-none relative z-10">
-                    <p className="text-white/80 text-lg md:text-xl leading-relaxed font-light italic whitespace-pre-wrap selection:bg-[#FF6B00] selection:text-white">
-                      "{selectedTestimonio.content}"
-                    </p>
-                  </div>
+                {/* El padding lateral reserva lugar para las curvas que unen la pestaña con la tarjeta */}
+                <div className="flex justify-center px-11">
+                  <figcaption className="testimonio-tab relative rounded-t-[1.25rem] bg-white px-6 pt-3 text-center font-semibold">
+                    {testimonio.author?.fullName || "Hermano de la iglesia"}
+                  </figcaption>
                 </div>
-              </motion.div>
-            </motion.div>,
-            document.body,
-          )}
-      </AnimatePresence>
-    </section>
-  );
-}
-
-// COMPONENTE TARJETA (Se mantiene igual...)
-function TestimonioCard({ testimonio, index, onClick }: any) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="relative group cursor-pointer bg-[#f5f5f4] border border-[#e7e5e4] rounded-[3rem] overflow-hidden hover:bg-[#f5f5f4] hover:border-[#FF6B00]/30 transition-all duration-500 shadow-[0_12px_30px_rgba(0,0,0,0.06)] flex flex-col h-[350px]"
-      onClick={onClick}
-    >
-      <div className="p-8 md:p-10 flex flex-col h-full relative z-10">
-        <Quote className="absolute top-8 right-8 text-black/5 w-20 h-20 group-hover:text-[#C2410C]/10 transition-colors duration-500 rotate-12 pointer-events-none" />
-        <div className="mb-6 flex-1 overflow-hidden">
-          <p className="text-lg font-medium text-[#292524] italic leading-relaxed line-clamp-4 group-hover:text-[#0a0a0a] transition-colors">
-            "{testimonio.content}"
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#57534e] group-hover:text-[#C2410C] transition-colors mb-6">
-          Leer Testimonio Completo{" "}
-          <ArrowRight
-            size={14}
-            className="group-hover:translate-x-2 transition-transform"
-          />
-        </div>
-        <div className="flex items-center gap-4 border-t border-[#e7e5e4] pt-6 mt-auto">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B00]/20 to-transparent border border-[#e7e5e4] flex items-center justify-center font-black text-[#C2410C] text-lg uppercase shadow-inner shrink-0">
-            {testimonio.author?.fullName?.charAt(0) || "F"}
+                <blockquote className="whitespace-pre-wrap rounded-[2rem] bg-white px-6 pb-6 pt-3 text-[15px] leading-relaxed text-[#44403c]">
+                  {testimonio.content}
+                </blockquote>
+              </motion.figure>
+            ))}
           </div>
-          <div className="min-w-0">
-            <h4 className="text-sm font-bold tracking-widest uppercase text-[#0a0a0a] truncate">
-              {testimonio.author?.fullName || "Fiel"}
-            </h4>
-            <p className="text-[9px] text-[#C2410C] font-black tracking-[0.2em] uppercase mt-1 truncate">
-              {testimonio.author?.rank || "Congregante"}
+        ) : (
+          <div className="rounded-[2rem] border border-[#e7e5e4] px-6 py-16 text-center">
+            <h3 className="text-xl font-semibold">Todavía no hay testimonios</h3>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-[#57534e]">
+              Pronto vas a poder leer lo que Dios está haciendo en la vida de nuestros hermanos.
             </p>
           </div>
-        </div>
+        )}
       </div>
-    </motion.div>
+    </section>
   );
 }

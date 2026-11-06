@@ -2,31 +2,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Edit3,
-  Trash2,
-  Calendar,
-  User as UserIcon,
-  AlertTriangle,
-  Loader2,
-  X,
-  FileText,
-  ArrowRight,
-  Check,
-} from "lucide-react";
+import { Pencil, Trash2, AlertTriangle, Loader2, X, Check, ExternalLink } from "lucide-react";
 import { deleteArticle, updateArticle } from "@/actions/articles/articles";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import RichTextEditor, { editorStyles } from "./RichTextEditor";
 
 function RichContent({ html }: { html: string }) {
   if (!html?.startsWith("<")) {
-    return (
-      <p className="text-white/65 text-lg md:text-xl leading-relaxed whitespace-pre-wrap italic font-light">
-        {html}
-      </p>
-    );
+    return <p className="whitespace-pre-wrap text-lg leading-relaxed text-[#44403c]">{html}</p>;
   }
-
   return (
     <div className="tiptap-editor w-full overflow-hidden">
       <div dangerouslySetInnerHTML={{ __html: html }} />
@@ -38,6 +22,9 @@ interface ArticleCardProps {
   article: any;
   onRefresh: () => void;
 }
+
+const pillButton =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-[transform,background-color,border-color] duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2";
 
 export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
   const [showReadingModal, setShowReadingModal] = useState(false);
@@ -98,7 +85,7 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
   };
 
   const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("es-ES", {
+    new Date(date).toLocaleDateString("es-AR", {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -107,196 +94,182 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
   // Generar vista previa eliminando tags pero manteniendo espacios entre bloques
   const getPreviewText = (html: string) => {
     return html
-      ?.replace(/<\/h1>|<\/h2>|<\/p>|<\/li>/g, " ") // Añade espacio al cerrar bloques
-      .replace(/<[^>]*>/g, "") // Eliminar el resto de tags
+      ?.replace(/<\/h1>|<\/h2>|<\/p>|<\/li>/g, " ")
+      .replace(/<[^>]*>/g, "")
       .trim();
+  };
+
+  const openEditor = () => {
+    setShowReadingModal(true);
+    setIsEditing(true);
   };
 
   return (
     <>
-      {/* Inyectamos los estilos globales que definen los colores y tamaños de H1, H2 y Listas */}
       <style>{editorStyles}</style>
 
-      {/* ── 1. CARD VISTA PREVIA ── */}
-      <motion.div
+      {/* ── 1. TARJETA ── */}
+      <motion.article
         layout
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        onClick={() => setShowReadingModal(true)}
-        className="group cursor-pointer bg-[#0a0a0a] border border-white/[0.05] rounded-[2.5rem] overflow-hidden flex flex-col hover:border-[#FF6B00]/30 transition-all duration-500 shadow-2xl"
+        transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-[#e7e5e4] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
       >
-        <div className="relative h-52 w-full overflow-hidden">
-          {article.imageUrl ? (
-            <Image
-              src={article.imageUrl}
-              alt={article.title}
-              fill
-              className="object-cover opacity-50 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/[0.02]">
-              <FileText size={48} className="text-white/[0.05]" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
-        </div>
-
-        <div className="p-8 flex-1 flex flex-col">
-          <h3 className="text-xl font-black text-white uppercase italic mb-4 line-clamp-2 group-hover:text-[#FF6B00] transition-colors tracking-tighter">
-            {article.title}
-          </h3>
-          <p className="text-xs text-white/40 leading-relaxed line-clamp-3 italic flex-1">
-            {getPreviewText(article.content)}
-          </p>
-          <div className="mt-4 flex items-center gap-2 text-[9px] font-black text-[#FF6B00] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
-            Leer artículo completo <ArrowRight size={10} />
+        <button
+          type="button"
+          onClick={() => setShowReadingModal(true)}
+          className="flex flex-1 flex-col text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF6B00]"
+        >
+          <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#0a0a0a]">
+            {article.imageUrl ? (
+              <Image
+                src={article.imageUrl}
+                alt=""
+                fill
+                sizes="(min-width: 1280px) 400px, 50vw"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              />
+            ) : (
+              <img src="/Logo.webp" alt="" aria-hidden="true" className="absolute -bottom-10 -right-10 w-48 opacity-[0.12]" />
+            )}
+          </div>
+          <div className="flex flex-1 flex-col p-5">
+            <p className="text-sm text-[#57534e]">
+              {formatDate(article.createdAt)} · {article.author?.fullName || "Admin"}
+            </p>
+            <h3 className="mt-1 line-clamp-2 text-xl font-semibold tracking-[-0.01em]">{article.title}</h3>
+            <p className="mt-2 line-clamp-2 text-sm text-[#57534e]">{getPreviewText(article.content)}</p>
+          </div>
+        </button>
+        <div className="flex items-center justify-between gap-2 border-t border-[#e7e5e4] px-5 py-3">
+          <button
+            type="button"
+            onClick={openEditor}
+            className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+          >
+            <Pencil size={16} aria-hidden="true" /> Editar
+          </button>
+          <div className="flex gap-1">
+            {article.slug && (
+              <a
+                href={`/articulos/${article.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Ver en la web"
+                title="Ver en la web"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#f5f5f4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+              >
+                <ExternalLink size={16} />
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              aria-label={`Eliminar ${article.title}`}
+              title="Eliminar"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#fef2f2] hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
         </div>
-      </motion.div>
+      </motion.article>
 
-      {/* ── 2. MODAL LECTURA A PANTALLA COMPLETA ── */}
+      {/* ── 2. LECTURA / EDICIÓN A PANTALLA COMPLETA ── */}
       <AnimatePresence>
         {showReadingModal && (
           <motion.div
+            key="lectura-articulo"
+            role="dialog"
+            aria-modal="true"
+            aria-label={article.title}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[5000] bg-[#080808] flex flex-col md:flex-row overflow-hidden"
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[5000] flex overflow-hidden bg-white text-[#0a0a0a] font-[family-name:var(--font-poppins)]"
           >
-            {/* Controles */}
-            <div className="absolute top-6 right-6 z-[6000] flex items-center gap-2">
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-[#FF6B00] border border-white/10 rounded-full transition-all font-black uppercase text-[9px] text-white"
-                >
-                  <Edit3 size={14} /> Editar
-                </button>
+            {/* Imagen */}
+            <div className="relative w-5/12 shrink-0 overflow-hidden bg-[#0a0a0a]">
+              {article.imageUrl ? (
+                <Image src={article.imageUrl} alt="" fill sizes="40vw" className="object-cover" />
               ) : (
-                <button
-                  onClick={handleCancelEdit}
-                  className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-full transition-all font-black uppercase text-[9px] text-white/60"
-                >
-                  <X size={14} /> Cancelar
-                </button>
+                <img src="/Logo.webp" alt="" aria-hidden="true" className="absolute -bottom-16 -right-16 w-80 opacity-[0.12]" />
               )}
-              <button
-                onClick={() => {
-                  setShowReadingModal(false);
-                  if (isEditing) handleCancelEdit();
-                }}
-                className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white"
-              >
-                <X size={20} />
-              </button>
             </div>
 
-            {/* Banner lateral */}
-            <div className="w-full md:w-5/12 h-[40vh] md:h-full relative overflow-hidden bg-[#0a0a0a]">
-              {article.imageUrl && (
-                <Image
-                  src={article.imageUrl}
-                  alt=""
-                  fill
-                  className="object-cover opacity-40"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#080808] md:bg-gradient-to-r md:from-transparent md:to-[#080808]" />
-              <div className="absolute bottom-16 left-12 right-12 hidden md:block">
-                <p className="text-[10px] font-black text-[#FF6B00] uppercase tracking-[0.3em] mb-4">
-                  Artículo
+            {/* Contenido */}
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex items-center justify-between gap-4 border-b border-[#e7e5e4] px-10 py-5">
+                <p className="text-sm text-[#57534e]">
+                  {article.author?.fullName || "Admin"} · {formatDate(article.createdAt)}
                 </p>
-                {isEditing ? (
-                  <textarea
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    rows={3}
-                    className="w-full bg-transparent border-b-2 border-[#FF6B00]/60 text-5xl font-black uppercase italic tracking-tighter text-white resize-none outline-none"
-                    placeholder="Título..."
-                  />
-                ) : (
-                  <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white leading-none">
-                    {article.title}
-                  </h2>
-                )}
-              </div>
-            </div>
-
-            {/* Columna Derecha: Contenido con soporte para H1, H2 y Listas */}
-            <div className="w-full md:w-7/12 h-[60vh] md:h-full flex flex-col bg-[#080808]">
-              <div className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar">
-                <div className="max-w-xl mx-auto space-y-12">
-                  {/* Metadata */}
-                  <div className="flex items-center gap-5 pb-10 border-b border-white/5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#FF6B00]/10 flex items-center justify-center">
-                      <UserIcon size={22} className="text-[#FF6B00]" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black uppercase text-[#FF6B00] tracking-[0.3em]">
-                        Escrito por
-                      </p>
-                      <p className="text-white text-lg font-black uppercase italic">
-                        {article.author?.fullName || "Admin"}
-                      </p>
-                    </div>
-                    <div className="ml-auto text-white/20 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                      <Calendar size={14} /> {formatDate(article.createdAt)}
-                    </div>
-                  </div>
-
-                  {/* Renderizado de contenido dinámico */}
-                  <AnimatePresence mode="wait">
-                    {isEditing ? (
-                      <motion.div
-                        key="editing"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        <RichTextEditor
-                          value={editContent}
-                          onChange={setEditContent}
-                          placeholder="Contenido..."
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="viewing"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        {/* Aquí se renderizan los H1, H2 y Listas 
-                            con los estilos compartidos del editor 
-                        */}
-                        <RichContent html={article.content} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="mt-20 pt-10 border-t border-white/5 grid grid-cols-2 gap-4 pb-12">
-                    {isEditing ? (
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <>
+                      <button type="button" onClick={handleCancelEdit} className={`${pillButton} border border-[#e7e5e4] hover:bg-[#f5f5f4]`}>
+                        Cancelar
+                      </button>
                       <button
+                        type="button"
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="col-span-2 flex items-center justify-center gap-2 py-5 bg-[#FF6B00] rounded-2xl font-black uppercase text-[9px] text-white disabled:opacity-50"
+                        className={`${pillButton} bg-[#0a0a0a] text-white hover:bg-[#292524] disabled:cursor-wait disabled:opacity-80`}
                       >
-                        {isSaving ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Check size={14} />
-                        )}
+                        {isSaving ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Check size={16} aria-hidden="true" />}
                         Guardar cambios
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => setShowConfirmDelete(true)}
-                        className="flex items-center justify-center gap-2 py-5 bg-red-500/5 border border-red-500/10 hover:bg-red-600 rounded-2xl transition-all font-black uppercase text-[9px] text-red-500/50 hover:text-white"
-                      >
-                        <Trash2 size={14} /> Eliminar Artículo
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => setIsEditing(true)} className={`${pillButton} bg-[#0a0a0a] text-white hover:bg-[#292524]`}>
+                        <Pencil size={16} aria-hidden="true" /> Editar
                       </button>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmDelete(true)}
+                        className={`${pillButton} border border-[#e7e5e4] text-red-700 hover:border-red-700 hover:bg-[#fef2f2]`}
+                      >
+                        <Trash2 size={16} aria-hidden="true" /> Eliminar
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReadingModal(false);
+                      if (isEditing) handleCancelEdit();
+                    }}
+                    aria-label="Cerrar"
+                    className="ml-2 flex h-11 w-11 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e] transition-colors hover:bg-[#e7e5e4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto overscroll-contain px-10 py-10">
+                <div className="mx-auto max-w-2xl">
+                  {isEditing ? (
+                    <>
+                      <label htmlFor="editar-titulo" className="text-sm font-medium text-[#292524]">Título</label>
+                      <textarea
+                        id="editar-titulo"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        rows={2}
+                        className="mt-1.5 w-full resize-none rounded-xl border border-[#e7e5e4] bg-white px-4 py-3 text-3xl font-semibold tracking-[-0.02em] outline-none transition-[border-color,box-shadow] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30"
+                      />
+                      <p className="mb-2 mt-6 text-sm font-medium text-[#292524]">Contenido</p>
+                      <RichTextEditor value={editContent} onChange={setEditContent} placeholder="Contenido…" />
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="mb-8 text-4xl font-semibold leading-[1.1] tracking-[-0.03em] text-balance">{article.title}</h2>
+                      <RichContent html={article.content} />
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -304,49 +277,47 @@ export default function ArticleCard({ article, onRefresh }: ArticleCardProps) {
         )}
       </AnimatePresence>
 
-      {/* ── 3. MODAL DE CONFIRMACIÓN PARA ELIMINAR ── */}
+      {/* ── 3. CONFIRMAR ELIMINACIÓN ── */}
       <AnimatePresence>
         {showConfirmDelete && (
           <motion.div
+            key="borrar-articulo"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[7000] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-[7000] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm font-[family-name:var(--font-poppins)]"
+            onClick={() => setShowConfirmDelete(false)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-md bg-[#0d0d0d] border border-red-500/20 rounded-[3rem] p-10 text-center shadow-2xl"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-borrar-articulo"
+              initial={{ opacity: 0, scale: 0.98, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-[2rem] bg-white p-8 text-center text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
             >
-              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <AlertTriangle size={28} className="text-red-500" />
-              </div>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white mb-2">
-                ¿Eliminar Artículo?
-              </h3>
-              <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold mb-8 leading-relaxed">
-                Esta acción borrará definitivamente el contenido y la imagen
-                asociada. No se puede deshacer.
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2] text-red-700">
+                <AlertTriangle size={24} aria-hidden="true" />
+              </span>
+              <h3 id="titulo-borrar-articulo" className="mt-4 text-2xl font-semibold tracking-[-0.02em]">¿Eliminar el artículo?</h3>
+              <p className="mt-2 text-sm text-[#57534e]">
+                Se borran el texto y la imagen de “{article.title}”. No se puede deshacer.
               </p>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setShowConfirmDelete(false)}
-                  className="py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-black uppercase text-[9px] tracking-widest transition-all"
-                >
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setShowConfirmDelete(false)} className={`${pillButton} h-12 border border-[#e7e5e4] hover:bg-[#f5f5f4]`}>
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="py-4 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-black uppercase text-[9px] tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className={`${pillButton} h-12 bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-700 disabled:opacity-80`}
                 >
-                  {isDeleting ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    "Confirmar"
-                  )}
+                  {isDeleting ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}
+                  Eliminar
                 </button>
               </div>
             </motion.div>

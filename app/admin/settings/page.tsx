@@ -14,13 +14,12 @@ import {
   EyeOff,
   AlertTriangle
 } from "lucide-react";
-import { createAdmin, getAdminProfileData, updateAdminProfile, checkUsernameAvailability } from "@/actions/admin/admin.actions";
+import { getAdminProfileData, updateAdminProfile, checkUsernameAvailability } from "@/actions/admin/admin.actions";
 import { Role } from "@/lib/types/definitions";
 import { validateSessionUser, changePassword } from "@/actions/user";
-import { toast, Toaster } from "sonner";
+import { toast, Toaster } from "@/lib/toast";
 
 export default function SettingsPage() {
-  const [showCreateAdmin, setShowCreateAdmin] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
 
@@ -29,9 +28,7 @@ export default function SettingsPage() {
   const [userRole, setUserRole] = useState<Role | null>(null);
 
   // Estados para el formulario
-  const [username, setUsername] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [errors, setErrors] = useState<any>({});
 
   // Estados para editar perfil
   const [profileData, setProfileData] = useState({ fullName: "", username: "" });
@@ -84,40 +81,6 @@ export default function SettingsPage() {
     const timeoutId = setTimeout(checkUsername, 500);
     return () => clearTimeout(timeoutId);
   }, [profileData.username]);
-
-  const handleCreateAdmin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({});
-    const formData = new FormData(e.currentTarget);
-
-    const result = await createAdmin(
-      username,
-      formData.get("password") as string,
-      formData.get("fullName") as string,
-      formData.get("role") as Role,
-    );
-
-    if (result.ok) {
-      toast.success("Usuario creado con éxito");
-      setShowCreateAdmin(false);
-      setUsername("");
-      setSuggestions([]);
-    } else {
-      if (result.suggestions) {
-        setSuggestions(result.suggestions);
-        toast.error("Nombre de usuario no disponible");
-      }
-      
-      try {
-        const parsedError = JSON.parse(result.message);
-        setErrors(parsedError);
-      } catch (e) {
-        toast.error(result.message);
-      }
-    }
-    setLoading(false);
-  };
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -201,21 +164,6 @@ export default function SettingsPage() {
               setShowEditProfile(true);
             }}
           />
-
-          {/* SOLO SE MUESTRA SI ES SUPERADMIN */}
-          {isSuperAdmin && (
-            <SettingsCard
-              icon={<UserPlus size={24} />}
-              title="Crear Usuario"
-              description="Otorga acceso de gestión a un nuevo colaborador."
-              highlight
-              onClick={() => {
-                setErrors({});
-                setSuggestions([]);
-                setShowCreateAdmin(true);
-              }}
-            />
-          )}
 
           <SettingsCard
             icon={<ShieldCheck size={24} />}
@@ -444,169 +392,6 @@ export default function SettingsPage() {
           )}
         </AnimatePresence>
 
-        {/* --- MODAL PARA CREAR ADMIN --- */}
-        <AnimatePresence>
-          {showCreateAdmin && isSuperAdmin && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowCreateAdmin(false)}
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              />
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="relative w-full max-w-md bg-[#0a0a0a] border border-white/10 p-10 rounded-[2.5rem] shadow-2xl max-h-[90vh] overflow-y-auto"
-              >
-                <button
-                  onClick={() => setShowCreateAdmin(false)}
-                  className="absolute top-6 right-6 text-white/20 hover:text-white bg-white/5 p-2 rounded-full transition-colors"
-                >
-                  <X size={18} />
-                </button>
-
-                <h2 className="text-2xl font-black uppercase italic text-white mb-8">
-                  Nuevo <span className="text-[#FF6B00]">Usuario</span>
-                </h2>
-
-                <form
-                  onSubmit={handleCreateAdmin}
-                  className="flex flex-col gap-5"
-                >
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
-                      Nombre Completo
-                    </label>
-                    <input
-                      name="fullName"
-                      required
-                      className={`bg-white/5 border ${errors.fullName ? "border-red-500/50" : "border-white/10"} rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
-                      placeholder="Ej. Juan Pérez"
-                    />
-                    {errors.fullName && (
-                      <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
-                        {errors.fullName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
-                      Username
-                    </label>
-                    <input
-                      name="username"
-                      required
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value.toLowerCase().replace(/\s/g, ""));
-                        setSuggestions([]);
-                      }}
-                      className={`bg-white/5 border ${suggestions.length > 0 || errors.username ? "border-[#FF6B00]/50" : "border-white/10"} rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
-                      placeholder="juan.admin"
-                    />
-                    {suggestions.length > 0 && (
-                      <div className="mt-2 p-4 bg-[#FF6B00]/5 border border-[#FF6B00]/20 rounded-2xl">
-                        <p className="text-[9px] font-black uppercase text-[#FF6B00] mb-3 flex items-center gap-2">
-                          <Loader2 size={10} className="animate-pulse" /> Sugerencias disponibles:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {suggestions.map((sug) => (
-                            <button
-                              key={sug}
-                              type="button"
-                              onClick={() => {
-                                setUsername(sug);
-                                setSuggestions([]);
-                              }}
-                              className="text-[10px] bg-white/5 hover:bg-[#FF6B00] hover:text-black px-3 py-1.5 rounded-lg text-white font-black transition-all border border-white/5"
-                            >
-                              {sug}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {errors.username && (
-                      <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
-                        {errors.username}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
-                      Rol de Usuario
-                    </label>
-                    <div className="relative">
-                      <select
-                        name="role"
-                        required
-                        defaultValue={Role.admin}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors appearance-none cursor-pointer font-bold"
-                      >
-                        {Object.values(Role).map((role) => (
-                          <option
-                            key={role}
-                            value={role}
-                            className="bg-[#0a0a0a] text-white"
-                          >
-                            {role.toUpperCase()}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={16}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black uppercase text-white/30 ml-2 tracking-widest">
-                      Contraseña
-                    </label>
-                    <div className="relative">
-                      <input
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        className={`w-full bg-white/5 border ${errors.password ? "border-red-500/50" : "border-white/10"} rounded-2xl px-5 py-4 pr-12 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors`}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-[10px] text-red-500 font-bold uppercase ml-2 italic">
-                        {errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    disabled={loading}
-                    className="mt-6 bg-white text-black font-black uppercase py-5 rounded-2xl tracking-widest text-[10px] hover:bg-[#FF6B00] hover:text-white disabled:opacity-50 transition-all shadow-xl flex items-center justify-center gap-3"
-                  >
-                    {loading ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      "Registrar Usuario"
-                    )}
-                  </button>
-                </form>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

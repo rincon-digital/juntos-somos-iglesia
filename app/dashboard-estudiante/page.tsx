@@ -41,7 +41,7 @@ import FaithMap from "@/components/student/FaithMap";
 import UserTestimonyManager from "@/components/student/UserTestimonyManager";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 export default function StudentDashboard() {
   const [student, setStudent] = useState<any>(null);

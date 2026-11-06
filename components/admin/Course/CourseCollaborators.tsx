@@ -7,7 +7,7 @@ import {
   getAvailableUsers 
 } from "@/actions/course/management/course.management";
 import { UserIcon, Trash2, UserPlus, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Manager {

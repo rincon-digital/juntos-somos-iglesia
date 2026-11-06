@@ -22,7 +22,7 @@ import {
   updateVideo,
 } from "@/actions/course/video/video";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import EvaluationForm from "../evaluation/EvaluationForm";
 

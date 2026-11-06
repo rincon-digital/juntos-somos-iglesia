@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   Edit,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   createTestimony,

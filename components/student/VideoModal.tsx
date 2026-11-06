@@ -12,7 +12,7 @@ import {
   Minimize,
 } from "lucide-react";
 import { userEvaluations } from "@/actions/user_course/evaluations/user.evaluations";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function VideoModal({ video, onClose }: any) {

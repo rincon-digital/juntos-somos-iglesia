@@ -1,135 +1,122 @@
 "use client";
-import {
-  MapPin,
-  Navigation,
-  Clock,
-  MessageCircle,
-  Instagram,
-  Facebook,
-  Globe,
-} from "lucide-react";
+import { Navigation, MessageCircle, Instagram, Facebook } from "lucide-react";
+import { PREDICAS_LISTA } from "@/components/Predicas";
+
+// El lunes (Ayuno) se hace en el hogar, no en el templo
+const LUGAR_ESPECIAL: Record<string, string> = { Lunes: "En el hogar" };
 
 export default function Ubicacion() {
   // -----------------LINKS----------------------
   const mapUrl =
     "https://maps.google.com/?q=Juntos+Somos+Iglesia+Av.+Juan+B.+Cabral+844+Formosa";
+  const mapEmbedUrl =
+    "https://maps.google.com/maps?q=Av.+Juan+B.+Cabral+844,+Formosa,+Argentina&z=16&output=embed";
 
   const whatsappUrl = "https://wa.me/543704601648";
   //-----------------------FIN LINKS -------------------
+
   return (
-    <section id="ubicacion" className="py-18 px-6 md:px-10 bg-white">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div>
-            <span className="text-[#C2410C] uppercase tracking-[0.5em] text-[10px] font-bold italic">
-              Ubicación
-            </span>
-            <h2 className="text-4xl md:text-6xl font-black uppercase italic text-[#0a0a0a] leading-none mt-2 tracking-tighter">
-              Nuestra <br />{" "}
-              <span className="text-[#EA580C] not-italic">Casa.</span>
-            </h2>
+    <section
+      id="ubicacion"
+      className="scroll-mt-12 bg-white px-6 py-24 text-[#0a0a0a] font-[family-name:var(--font-poppins)]"
+    >
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-12 max-w-xl">
+          <h2 className="text-4xl font-semibold tracking-[-0.03em] text-balance md:text-5xl">
+            Cómo llegar
+          </h2>
+          <p className="mt-3 text-base text-[#57534e]">
+            Te estamos esperando. La entrada es libre y gratuita.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* MAPA */}
+          <div className="relative min-h-[320px] overflow-hidden rounded-[2rem] bg-[#f5f5f4] shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+            <iframe
+              src={mapEmbedUrl}
+              title="Mapa de Juntos Somos Iglesia en Av. Juan B. Cabral 844, Formosa"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="absolute inset-0 h-full w-full border-0"
+            />
           </div>
 
-          {/* Redes Sociales */}
-          <div className="flex gap-4">
-            <a
-              href="https://www.instagram.com/somosiglesiaok/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full border border-[#e7e5e4] flex items-center justify-center text-[#0a0a0a] hover:bg-[#FF6B00] hover:text-black transition-all duration-500"
-            >
-              <Instagram size={20} />
-            </a>
-            <a
-              href="https://www.facebook.com/juntossomosiglesiafsa"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full border border-[#e7e5e4] flex items-center justify-center text-[#0a0a0a] hover:bg-[#FF6B00] hover:text-black transition-all duration-500"
-            >
-              <Facebook size={20} />
-            </a>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Tarjeta de Dirección */}
-          <div className="md:col-span-1 bg-[#fafaf9] border border-[#e7e5e4] rounded-[2rem] p-8 flex flex-col justify-between group hover:border-[#FF6B00]/30 transition-all">
-            <div>
-              <MapPin className="text-[#C2410C] w-10 h-10 mb-6" />
-              <h3 className="text-2xl font-black uppercase italic text-[#0a0a0a] mb-2">
-                Dirección
-              </h3>
-              <p className="text-[#57534e] text-lg leading-tight font-medium italic">
-                Av. Juan B. Cabral 844, <br />
-                P3600 Formosa, Argentina.
+          <div className="flex flex-col gap-6">
+            {/* DIRECCIÓN Y CONTACTO */}
+            <div className="rounded-[2rem] border border-[#e7e5e4] p-6 md:p-8">
+              <p className="text-sm text-[#57534e]">Dirección</p>
+              <p className="mt-1 text-2xl font-semibold tracking-[-0.02em]">
+                Av. Juan B. Cabral 844
               </p>
-            </div>
-          </div>
+              <p className="text-[#57534e]">P3600 Formosa, Argentina</p>
 
-          {/* Tarjeta de Invitación y Botón GPS */}
-          <div className="md:col-span-2 bg-[#fafaf9] rounded-[2rem] p-10 md:p-16 flex flex-col justify-center items-center text-center border border-[#e7e5e4] relative overflow-hidden group">
-            <div className="absolute -top-24 -right-24 w-60 h-60 bg-[#FF6B00]/10 blur-[100px] rounded-full group-hover:bg-[#FF6B00]/20 transition-all duration-700" />
-
-            <h3 className="text-2xl md:text-4xl font-black uppercase italic text-[#0a0a0a] mb-8 tracking-tighter relative z-10">
-              Te estamos <br />{" "}
-              <span className="text-[#EA580C]">esperando.</span>
-            </h3>
-
-            <a
-              href={mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/btn relative inline-flex items-center gap-4 bg-[#FF6B00] text-black font-black uppercase italic px-10 py-6 rounded-2xl hover:scale-[1.05] active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,107,0,0.3)]"
-            >
-              <Navigation className="w-4 h-4 fill-current group-hover/btn:animate-bounce" />
-              <span className="text-xl tracking-tighter">
-                Abrir en Google Maps
-              </span>
-            </a>
-          </div>
-
-          {/* Tarjeta de Horarios / WhatsApp */}
-          <div className="md:col-span-3 bg-[#fafaf9] border border-[#e7e5e4] rounded-[2rem] p-4 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="w-10 h-10 rounded-full bg-[#FF6B00]/10 flex items-center justify-center">
-                <Clock className="text-[#C2410C] w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-[#C2410C] text-[10px] uppercase font-bold tracking-[0.2em]">
-                  Horarios
-                </p>
-                <p className="text-[#0a0a0a] text-xl font-black italic uppercase">
-                  19:30 — 21:30 HS
-                </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-[#0a0a0a] px-6 text-sm font-medium text-white transition-[transform,background-color] duration-200 ease-out hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+                >
+                  <Navigation size={16} aria-hidden="true" />
+                  Abrir en Google Maps
+                </a>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-[#e7e5e4] px-6 text-sm font-medium transition-colors duration-200 hover:border-green-700 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+                >
+                  <MessageCircle size={16} className="text-green-700" aria-hidden="true" />
+                  Escribinos por WhatsApp
+                </a>
               </div>
             </div>
 
-            <div className="hidden md:block w-[1px] h-12 bg-[#f5f5f4]"></div>
+            {/* HORARIOS */}
+            <div className="rounded-[2rem] border border-[#e7e5e4] p-6 md:p-8">
+              <h3 className="text-xl font-semibold tracking-[-0.01em]">Horarios</h3>
+              <ul className="mt-4 divide-y divide-[#e7e5e4]">
+                {PREDICAS_LISTA.map((item) => (
+                  <li key={item.dia} className="flex items-start justify-between gap-4 py-3">
+                    <div className="min-w-0">
+                      <p className="font-medium">{item.dia}</p>
+                      <p className="text-sm text-[#57534e]">
+                        {item.titulo}
+                        {LUGAR_ESPECIAL[item.dia] && ` · ${LUGAR_ESPECIAL[item.dia]}`}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-right text-sm font-medium tabular-nums">
+                      {item.horario}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-6 group cursor-pointer"
-            >
-              <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center group-hover:bg-green-500 transition-colors duration-500">
-                <MessageCircle className="text-green-700 w-7 h-7 group-hover:text-black transition-colors" />
+            {/* REDES */}
+            <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-[#e7e5e4] px-6 py-4 md:px-8">
+              <p className="font-medium">Seguinos en redes</p>
+              <div className="flex gap-2">
+                <a
+                  href="https://www.instagram.com/somosiglesiaok/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram de Juntos Somos Iglesia"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] text-pink-700 transition-colors duration-200 hover:border-pink-700 hover:bg-pink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+                >
+                  <Instagram size={18} aria-hidden="true" />
+                </a>
+                <a
+                  href="https://www.facebook.com/juntossomosiglesiafsa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook de Juntos Somos Iglesia"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] text-blue-700 transition-colors duration-200 hover:border-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+                >
+                  <Facebook size={18} aria-hidden="true" />
+                </a>
               </div>
-              <div>
-                <p className="text-green-700 text-[10px] uppercase font-bold tracking-[0.2em]">
-                  WhatsApp
-                </p>
-                <p className="text-[#0a0a0a] text-xl font-black italic uppercase group-hover:text-green-700 transition-colors">
-                  Contactanos
-                </p>
-              </div>
-            </a>
-
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-[#FF6B00] rounded-full animate-pulse" />
-              <p className="text-[#57534e] text-[10px] uppercase font-black tracking-widest italic font-bold">
-                Entrada Libre y Gratuita
-              </p>
             </div>
           </div>
         </div>

@@ -2,10 +2,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
-import { ArrowLeft, Lock, Loader2, User, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { toast, Toaster } from "sonner";
+import { toast } from "@/lib/toast";
 import { login } from "@/actions/auth/auth";
+
+const inputClass =
+  "h-12 w-full rounded-xl border border-[#e7e5e4] bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-[border-color,box-shadow] duration-200 hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30";
 
 export default function UnifiedLogin() {
   const [loading, setLoading] = useState(false);
@@ -16,9 +19,9 @@ export default function UnifiedLogin() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from(".login-card", {
-        y: 40,
+        y: 16,
         opacity: 0,
-        duration: 1.2,
+        duration: 0.8,
         ease: "expo.out",
       });
     });
@@ -44,9 +47,9 @@ export default function UnifiedLogin() {
       tl.to(".success-overlay", { opacity: 1, duration: 0.4 }).to(
         formRef.current,
         {
-          scale: 0.9,
+          scale: 0.96,
           opacity: 0,
-          duration: 0.6,
+          duration: 0.5,
           delay: 0.3,
           onComplete: () => {
             if (res.role === "admin" || res.role === "superadmin") {
@@ -61,9 +64,9 @@ export default function UnifiedLogin() {
       toast.error(res.error || "Credenciales inválidas", {
         description: "Revisa tu usuario y contraseña e intenta nuevamente.",
       });
-      
+
       gsap.to(formRef.current, {
-        x: 10,
+        x: 8,
         repeat: 3,
         yoyo: true,
         duration: 0.05,
@@ -76,94 +79,112 @@ export default function UnifiedLogin() {
   };
 
   return (
-    <main className="relative min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 selection:bg-[#FF6B00] overflow-hidden">
-      <Toaster richColors theme="dark" position="top-right" />
+    <main className="grid min-h-screen bg-white text-[#0a0a0a] selection:bg-[#FF6B00] selection:text-black font-[family-name:var(--font-poppins)] lg:grid-cols-2">
+      {/* FOTO DE LA IGLESIA (solo en pantallas grandes) */}
+      <div className="relative hidden overflow-hidden bg-[#0a0a0a] lg:block">
+        <img
+          src="/iglesia.webp"
+          alt="Culto en Juntos Somos Iglesia"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+        <div className="absolute inset-x-0 bottom-0 p-12 text-white">
+          <p className="text-4xl font-semibold leading-tight tracking-[-0.03em] text-balance">
+            Juntos Somos Iglesia
+          </p>
+          <p className="mt-3 max-w-sm text-white/85">
+            Tus cursos, tus clases y la vida de la iglesia, en un solo lugar.
+          </p>
+        </div>
+      </div>
 
-      <div className="w-full max-w-[420px] relative z-10">
+      {/* FORMULARIO */}
+      <div className="flex flex-col px-6 py-8 md:px-12">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-white/20 hover:text-[#FF6B00] transition-colors mb-12 text-[10px] font-black uppercase tracking-widest italic"
+          className="group inline-flex h-11 w-fit items-center gap-2 rounded-full border border-[#e7e5e4] pl-2 pr-5 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
         >
-          <ArrowLeft size={14} /> Volver al Inicio
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f5f4] transition-colors group-hover:bg-white">
+            <ArrowLeft size={16} aria-hidden="true" />
+          </span>
+          Volver al inicio
         </Link>
 
-        <div ref={formRef} className="login-card relative w-full">
-          {/* SUCCESS OVERLAY */}
-          <div className="success-overlay absolute inset-0 bg-[#FF6B00] rounded-[2.5rem] flex flex-col items-center justify-center z-20 opacity-0 pointer-events-none text-black">
-            <ShieldCheck size={70} strokeWidth={1.5} className="mb-4" />
-            <h2 className="text-2xl font-black uppercase italic tracking-tighter">
-              Accediendo
-            </h2>
-          </div>
-
-          <div className="bg-[#111]/90 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-10 md:p-14 shadow-2xl">
-            <div className="mb-10 text-left">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 bg-[#FF6B00] rounded-full animate-pulse" />
-                <span className="text-[#FF6B00] text-[10px] font-black uppercase tracking-[0.4em] italic">
-                  Portal de Acceso
-                </span>
-              </div>
-              <h1 className="text-5xl font-black uppercase italic text-white tracking-tighter leading-none mt-2">
-                Ingreso.
-              </h1>
+        <div className="flex flex-1 items-center justify-center py-12">
+          <div ref={formRef} className="login-card relative w-full max-w-sm">
+            {/* SUCCESS OVERLAY */}
+            <div className="success-overlay pointer-events-none absolute -inset-6 z-20 flex flex-col items-center justify-center rounded-[2rem] bg-[#FF6B00] text-black opacity-0">
+              <ShieldCheck size={56} strokeWidth={1.5} className="mb-3" aria-hidden="true" />
+              <p className="text-xl font-semibold">Accediendo…</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="relative group">
-                <User
-                  className="absolute left-6 top-1/2 -translate-y-1/2 text-white/10 group-focus-within:text-[#FF6B00] transition-colors"
-                  size={18}
-                />
+            <div className="mb-8 flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FF6B00]">
+                <img src="/Logo.webp" alt="" aria-hidden="true" className="h-6 w-6 brightness-0 invert" />
+              </span>
+              <span className="font-semibold">Juntos Somos Iglesia</span>
+            </div>
+
+            <h1 className="text-4xl font-semibold tracking-[-0.03em]">Ingresar</h1>
+            <p className="mt-2 text-[#57534e]">Entrá con tu usuario y contraseña.</p>
+
+            <form onSubmit={handleLogin} className="mt-8 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="login-usuario" className="text-sm font-medium text-[#292524]">
+                  Usuario
+                </label>
                 <input
+                  id="login-usuario"
                   name="username"
                   type="text"
-                  placeholder="USUARIO"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   required
-                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-6 text-xs font-black uppercase tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
+                  className={inputClass}
                 />
               </div>
 
-              <div className="relative group">
-                <Lock
-                  className="absolute left-6 top-1/2 -translate-y-1/2 text-white/10 group-focus-within:text-[#FF6B00] transition-colors"
-                  size={18}
-                />
-                <input
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="CONTRASEÑA"
-                  required
-                  className="w-full bg-[#0a0a0a] border border-white/5 rounded-2xl py-6 pl-16 pr-14 text-xs font-black tracking-widest outline-none focus:border-[#FF6B00]/40 transition-all text-white placeholder:text-white/20"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="login-password" className="text-sm font-medium text-[#292524]">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    className={`${inputClass} pr-12`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#57534e] transition-colors hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <button
                 disabled={loading}
-                className="w-full bg-[#FF6B00] text-black font-black uppercase py-6 rounded-2xl flex items-center justify-center gap-3 hover:bg-white transition-all duration-500 mt-6 italic tracking-tighter disabled:opacity-50 shadow-xl shadow-[#FF6B00]/10"
+                className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-[transform,background-color] duration-200 ease-out hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-80 disabled:active:scale-100"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} /> VERIFICANDO...
+                    <Loader2 className="animate-spin" size={16} aria-hidden="true" /> Verificando…
                   </>
                 ) : (
-                  "INGRESAR AL TEMPLO"
+                  "Ingresar"
                 )}
               </button>
             </form>
           </div>
         </div>
       </div>
-
-      {/* Background Decor */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FF6B00]/5 blur-[120px] rounded-full -z-10 pointer-events-none" />
     </main>
   );
 }

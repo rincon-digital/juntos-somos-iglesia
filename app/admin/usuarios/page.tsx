@@ -1,158 +1,290 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Users,
-  UserCog,
-  BookOpen,
-  Video,
-  UsersIcon,
-  X,
-  ChevronRight,
-  ArrowLeft,
-  Trash2,
   AlertTriangle,
+  BookOpen,
+  Eye,
+  EyeOff,
   Loader2,
-  Info,
-  UserCheck,
+  Search,
+  ShieldOff,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/actions/auth/auth";
-import {
-  getAdmins,
-  getAdminCourses,
-  deleteAdmin,
-  getCourseCollaborators,
-} from "@/actions/admin/dashboard";
+import { getAdmins, getAdminCourses, deleteAdmin, revokeAdminAccess } from "@/actions/admin/dashboard";
+import { createAdmin, checkUsernameAvailability } from "@/actions/admin/admin.actions";
 import { Role } from "@/lib/types/definitions";
-import { toast, Toaster } from "sonner";
+import { toast } from "@/lib/toast";
 
-// --- Animaciones Corregidas para TypeScript ---
-const containerVars: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.2 },
-  },
-};
+const inputClass =
+  "h-12 w-full rounded-xl border bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-[border-color,box-shadow] duration-200 focus:ring-2 focus:ring-[#FF6B00]/30";
+const inputOk = "border-[#e7e5e4] hover:border-[#d6d3d1] focus:border-[#0a0a0a]";
+const inputBad = "border-red-600 focus:border-red-600";
 
-const itemVars: Variants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
-};
+const pillButton =
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-[transform,background-color,border-color] duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2";
 
-const drawerVars: Variants = {
-  hidden: { x: "100%" },
-  visible: {
-    x: 0,
-    transition: {
-      type: "spring",
-      damping: 25,
-      stiffness: 200,
-    },
-  },
-  exit: {
-    x: "100%",
-    transition: {
-      ease: "easeInOut",
-      duration: 0.3,
-    },
-  },
-};
+const sinceDate = (d: string) =>
+  new Date(d).toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 
-// --- Componentes ---
-
-function CourseCard({
-  course,
-  index,
-  onSelect,
-}: {
-  course: any;
-  index: number;
-  onSelect: (c: any) => void;
-}) {
-  const fillPercent = Math.min(
-    (course.studentCount / course.quotaLimit) * 100,
-    100,
-  );
-
+function Avatar({ name, size = "h-11 w-11" }: { name?: string; size?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="group bg-[#0f0f0f] rounded-2xl p-5 cursor-pointer border border-white/5 hover:border-[#FF6B00]/30 transition-all relative overflow-hidden"
-      onClick={() => onSelect(course)}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-          <BookOpen className="text-[#FF6B00]" size={20} />
-        </div>
-        <div className="px-2 py-1 rounded-full text-[8px] font-bold uppercase bg-green-500/20 text-green-400">
-          Activo
-        </div>
-      </div>
-
-      <h4 className="text-sm font-bold text-white mb-4 group-hover:text-[#FF6B00] transition-colors uppercase tracking-tight">
-        {course.name}
-      </h4>
-
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center justify-between text-[10px] mb-2 font-mono uppercase tracking-widest text-white/40">
-            <span>Ocupación</span>
-            <span className="text-white font-bold">
-              {course.studentCount}/{course.quotaLimit}
-            </span>
-          </div>
-          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${fillPercent}%` }}
-              className={`h-full ${fillPercent >= 90 ? "bg-red-500" : "bg-[#FF6B00]"}`}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 text-[9px] font-bold text-white/30 uppercase">
-          <div className="flex items-center gap-1.5">
-            <UsersIcon size={12} /> {course.studentCount} Alumnos
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Video size={12} /> {course.quotaLimit} Cupos
-          </div>
-        </div>
-      </div>
-    </motion.div>
+    <span className={`flex ${size} shrink-0 items-center justify-center rounded-full bg-[#fff7ed] font-semibold text-[#C2410C]`}>
+      {name?.charAt(0)?.toUpperCase() || "?"}
+    </span>
   );
 }
+
+function CourseRow({ course, detail }: { course: any; detail: string }) {
+  const pct = course.quotaLimit > 0 ? Math.min(100, Math.round((course.studentCount / course.quotaLimit) * 100)) : 0;
+  const closed = course.deadline && new Date(course.deadline).getTime() < Date.now();
+  return (
+    <li className="flex items-center gap-4 py-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5f5f4] text-[#292524]">
+        <BookOpen size={16} aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate font-medium capitalize">{course.name.toLowerCase()}</p>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${closed ? "bg-[#fef2f2] text-red-700" : "bg-[#ecfdf5] text-green-700"}`}>
+            {closed ? "Cerrado" : "Abierto"}
+          </span>
+        </div>
+        <p className="truncate text-sm text-[#57534e]">{detail}</p>
+      </div>
+      <div className="w-40 shrink-0">
+        <div className="mb-1 flex justify-between text-sm">
+          <span className="text-[#57534e]">Alumnos</span>
+          <span className="font-medium tabular-nums">{course.studentCount}/{course.quotaLimit}</span>
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-[#f5f5f4]">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+            className={`h-full rounded-full ${pct >= 90 ? "bg-red-600" : "bg-[#FF6B00]"}`}
+          />
+        </div>
+      </div>
+    </li>
+  );
+}
+
+// Alta de usuarios del panel (antes estaba en Configuración)
+function CreateStaffModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [errors, setErrors] = useState<any>({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setUsername("");
+    setSuggestions([]);
+    setAvailable(null);
+    setErrors({});
+  }, [open]);
+
+  useEffect(() => {
+    if (username.length < 3) {
+      setAvailable(null);
+      setSuggestions([]);
+      return;
+    }
+    const id = setTimeout(async () => {
+      const res = await checkUsernameAvailability(username);
+      setAvailable(!!res.available);
+      setSuggestions(res.available ? [] : res.suggestions || []);
+    }, 500);
+    return () => clearTimeout(id);
+  }, [username]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
+    const formData = new FormData(e.currentTarget);
+    const result = await createAdmin(
+      username,
+      formData.get("password") as string,
+      formData.get("fullName") as string,
+      formData.get("role") as Role,
+    );
+    if (result.ok) {
+      toast.success("Usuario creado con éxito");
+      onCreated();
+      onClose();
+    } else {
+      if (result.suggestions) {
+        setSuggestions(result.suggestions);
+        setAvailable(false);
+      }
+      try {
+        setErrors(JSON.parse(result.message));
+      } catch {
+        toast.error(result.message);
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div key="crear-staff" className="fixed inset-0 z-[7000] flex items-center justify-center p-4 font-[family-name:var(--font-poppins)]">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-crear-staff"
+            initial={{ scale: 0.98, y: 12, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.98, y: 8, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            className="relative max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-[2rem] bg-white p-8 text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+          >
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 id="titulo-crear-staff" className="text-2xl font-semibold tracking-[-0.02em]">Nuevo usuario</h2>
+                <p className="mt-1 text-sm text-[#57534e]">Tendrá acceso al panel con el rol que elijas.</p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Cerrar"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e] transition-colors hover:bg-[#e7e5e4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="staff-nombre" className="text-sm font-medium text-[#292524]">Nombre completo</label>
+                <input id="staff-nombre" name="fullName" required autoComplete="off" placeholder="Ej. Juan Pérez" className={`${inputClass} ${errors.fullName ? inputBad : inputOk}`} />
+                {errors.fullName && <p className="text-sm text-red-700">{errors.fullName}</p>}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="staff-usuario" className="text-sm font-medium text-[#292524]">Usuario</label>
+                <input
+                  id="staff-usuario"
+                  name="username"
+                  required
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                  placeholder="juan.admin"
+                  aria-describedby="staff-usuario-estado"
+                  className={`${inputClass} ${available === false || errors.username ? inputBad : inputOk}`}
+                />
+                <div id="staff-usuario-estado" aria-live="polite" className="text-sm">
+                  {errors.username ? (
+                    <span className="text-red-700">{errors.username}</span>
+                  ) : available === true ? (
+                    <span className="text-green-700">Disponible</span>
+                  ) : available === false ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-red-700">No disponible. Probá con:</span>
+                      {suggestions.map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => setUsername(sug)}
+                          className="rounded-full border border-[#e7e5e4] px-3 py-1 text-sm font-medium transition-colors hover:border-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-[#57534e]">Mínimo 3 caracteres, sin espacios.</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="staff-rol" className="text-sm font-medium text-[#292524]">Rol</label>
+                <select id="staff-rol" name="role" required defaultValue={Role.admin} className={`${inputClass} ${inputOk} cursor-pointer`}>
+                  <option value={Role.admin}>Administrador: gestiona sus cursos</option>
+                  <option value={Role.superadmin}>Superadministrador: acceso total</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="staff-password" className="text-sm font-medium text-[#292524]">Contraseña</label>
+                <div className="relative">
+                  <input
+                    id="staff-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="new-password"
+                    className={`${inputClass} pr-12 ${errors.password ? inputBad : inputOk}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#57534e] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-sm text-red-700">{errors.password}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`${pillButton} mt-2 h-12 bg-[#0a0a0a] text-white hover:bg-[#292524] disabled:cursor-wait disabled:opacity-80`}
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <UserPlus size={16} aria-hidden="true" />}
+                {loading ? "Creando…" : "Crear usuario"}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+type Pending = { type: "revoke" | "delete" } | null;
 
 export default function UsuariosPage() {
   const [loading, setLoading] = useState(true);
   const [admins, setAdmins] = useState<any[]>([]);
   const [selectedAdmin, setSelectedAdmin] = useState<any>(null);
   const [adminCourses, setAdminCourses] = useState<any>(null);
-  const [selectedCourse, setSelectedCourse] = useState<any>(null);
-  const [collaborators, setCollaborators] = useState<any[]>([]);
-  const [loadingColabs, setLoadingColabs] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [pending, setPending] = useState<Pending>(null);
+  const [working, setWorking] = useState(false);
   const router = useRouter();
 
   const loadData = async () => {
     try {
-      const [session, adminsData] = await Promise.all([
-        getCurrentUser(),
-        getAdmins(),
-      ]);
-      if (session?.role === Role.superadmin) {
-        setAdmins(adminsData);
-      } else {
+      const session = await getCurrentUser();
+      if (session?.role !== Role.superadmin) {
         router.push("/admin");
+        return;
       }
+      setAdmins(await getAdmins());
     } catch (error) {
       console.error(error);
+      toast.error("No se pudo cargar el equipo");
     } finally {
-      setTimeout(() => setLoading(false), 800);
+      setLoading(false);
     }
   };
 
@@ -162,349 +294,250 @@ export default function UsuariosPage() {
 
   const handleSelectAdmin = async (admin: any) => {
     setSelectedAdmin(admin);
-    setSelectedCourse(null);
+    setAdminCourses(null);
+    setLoadingCourses(true);
     try {
-      const data = await getAdminCourses(admin.id);
-      setAdminCourses(data);
+      setAdminCourses(await getAdminCourses(admin.id));
     } catch (error) {
       console.error(error);
-    }
-  };
-
-  const handleOpenDetails = async (course: any) => {
-    setSelectedCourse(course);
-    setLoadingColabs(true);
-    try {
-      const colabs = await getCourseCollaborators(course.id);
-      const filteredColabs = colabs.filter(
-        (c: any) => c.id !== selectedAdmin?.id,
-      );
-      setCollaborators(filteredColabs);
-    } catch (error) {
-      toast.error("Error al cargar detalles");
+      toast.error("No se pudieron cargar sus cursos");
     } finally {
-      setLoadingColabs(false);
+      setLoadingCourses(false);
     }
   };
 
-  // --- FUNCIÓN CORREGIDA Y VERIFICADA ---
-  const handleDeleteAdminAction = async () => {
-    if (!selectedAdmin) return;
+  const handleConfirm = async () => {
+    if (!selectedAdmin || !pending) return;
+    setWorking(true);
     try {
-      await deleteAdmin(selectedAdmin.id);
-      toast.success("Administrador eliminado");
-      setShowDeleteModal(false);
+      if (pending.type === "revoke") {
+        await revokeAdminAccess(selectedAdmin.id);
+        toast.success(`${selectedAdmin.fullName} ya no tiene acceso al panel`);
+      } else {
+        await deleteAdmin(selectedAdmin.id);
+        toast.success("Cuenta eliminada");
+      }
+      setPending(null);
       setSelectedAdmin(null);
       setAdminCourses(null);
-      loadData();
+      await loadData();
     } catch (error: any) {
-      toast.error(error.message || "Error al eliminar");
+      toast.error(error.message || "No se pudo completar la acción");
+    } finally {
+      setWorking(false);
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-        <Loader2 className="animate-spin text-[#FF6B00]" size={40} />
-      </div>
-    );
+  const filtered = admins.filter(
+    (a) =>
+      a.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      a.username.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVars}
-      className="bg-[#050505] min-h-screen p-4 md:p-8 overflow-x-hidden"
-    >
-      <Toaster position="bottom-right" richColors theme="dark" />
+    <div className="space-y-6 py-2 text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
+      <header className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-[-0.03em]">Usuarios</h1>
+          <p className="mt-1 text-[#57534e]">Tu equipo del panel: en qué cursos está cada uno y quién tiene acceso.</p>
+        </div>
+        <button type="button" onClick={() => setShowCreate(true)} className={`${pillButton} h-12 bg-[#0a0a0a] px-6 text-white hover:bg-[#292524]`}>
+          <UserPlus size={16} aria-hidden="true" /> Crear usuario
+        </button>
+      </header>
 
-      <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative">
-        {/* COLUMNA IZQUIERDA: ADMINS */}
-        <motion.div variants={itemVars} className="lg:col-span-4 space-y-6">
-          <div className="flex items-center gap-4 mb-8">
-            <button
-              onClick={() => router.push("/admin")}
-              className="p-3 bg-white/5 rounded-xl hover:bg-[#FF6B00] transition-colors group"
-            >
-              <ArrowLeft size={20} className="text-white" />
-            </button>
-            <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-              Gestión <span className="text-[#FF6B00]">Staff</span>
-            </h1>
+      <div className="grid grid-cols-12 gap-5">
+        {/* LISTA DEL EQUIPO */}
+        <section className="col-span-4 rounded-[1.75rem] border border-[#e7e5e4] bg-white p-4 shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+          <div className="relative mb-3">
+            <label htmlFor="buscar-staff" className="sr-only">Buscar usuario</label>
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]" size={16} aria-hidden="true" />
+            <input
+              id="buscar-staff"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o usuario…"
+              className={`${inputClass} ${inputOk} rounded-full pl-11`}
+            />
           </div>
-
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-            {admins.map((admin) => (
-              <div
-                key={admin.id}
-                onClick={() => handleSelectAdmin(admin)}
-                className={`p-4 rounded-2xl cursor-pointer border transition-all ${selectedAdmin?.id === admin.id ? "bg-[#FF6B00]/10 border-[#FF6B00]" : "bg-[#0f0f0f] border-white/5 hover:border-white/20"}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold text-[#FF6B00]">
-                    {admin.fullName[0]}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-white uppercase tracking-tight">
-                      {admin.fullName}
-                    </p>
-                    <p className="text-[10px] text-white/30 font-mono italic">
-                      @{admin.username}
-                    </p>
-                  </div>
-                  <ChevronRight
-                    size={14}
-                    className={
-                      selectedAdmin?.id === admin.id
-                        ? "text-[#FF6B00]"
-                        : "text-white/10"
-                    }
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* COLUMNA DERECHA */}
-        <motion.div variants={itemVars} className="lg:col-span-8">
-          {selectedAdmin && adminCourses ? (
-            <div className="space-y-8">
-              <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-8 relative overflow-hidden">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-                  <div className="flex items-center gap-6">
-                    <div className="w-20 h-20 rounded-3xl bg-[#FF6B00]/10 flex items-center justify-center border border-[#FF6B00]/20">
-                      <UserCog className="text-[#FF6B00]" size={40} />
-                    </div>
-                    <div>
-                      <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">
-                        {selectedAdmin.fullName}
-                      </h2>
-                      <div className="flex gap-3 mt-1">
-                        <span className="text-[10px] font-mono text-[#FF6B00] uppercase bg-[#FF6B00]/10 px-2 py-0.5 rounded-md">
-                          Admin
-                        </span>
-                        <span className="text-[10px] font-mono text-white/40 uppercase">
-                          @{selectedAdmin.username}
-                        </span>
+          <p className="px-2 pb-2 text-sm text-[#57534e]">
+            {admins.length} {admins.length === 1 ? "administrador" : "administradores"}
+          </p>
+          {loading ? (
+            <div className="space-y-2" aria-busy="true">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-16 animate-pulse rounded-2xl bg-[#f5f5f4]" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="px-2 py-8 text-center text-sm text-[#57534e]">
+              {search ? "Nadie coincide con esa búsqueda." : "Todavía no hay administradores. Creá el primero."}
+            </p>
+          ) : (
+            <ul className="max-h-[60vh] space-y-1 overflow-y-auto">
+              {filtered.map((admin) => {
+                const active = selectedAdmin?.id === admin.id;
+                return (
+                  <li key={admin.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAdmin(admin)}
+                      aria-pressed={active}
+                      className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${
+                        active ? "bg-[#0a0a0a] text-white" : "hover:bg-[#f5f5f4]"
+                      }`}
+                    >
+                      <Avatar name={admin.fullName} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{admin.fullName}</p>
+                        <p className={`truncate text-sm ${active ? "text-white/70" : "text-[#57534e]"}`}>@{admin.username}</p>
                       </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="w-fit px-6 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-2xl transition-all font-bold text-[10px] uppercase tracking-widest flex items-center gap-2"
-                  >
-                    <Trash2 size={14} /> Eliminar Cuenta
-                  </button>
-                </div>
-              </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums ${active ? "bg-white/15" : "bg-[#f5f5f4] text-[#57534e]"}`}>
+                        {admin._count?.managedCourses ?? 0} {admin._count?.managedCourses === 1 ? "curso" : "cursos"}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-[10px] font-mono text-[#FF6B00] uppercase tracking-[0.3em] mb-4">
-                    Cursos Propios ({adminCourses.created.length})
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4">
-                    {adminCourses.created.map((c: any, i: number) => (
-                      <CourseCard
-                        key={c.id}
-                        course={c}
-                        index={i}
-                        onSelect={handleOpenDetails}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-[10px] font-mono text-white/30 uppercase tracking-[0.3em] mb-4">
-                    Colaboraciones ({adminCourses.collaborating.length})
-                  </h4>
-                  <div className="grid grid-cols-1 gap-4 opacity-70">
-                    {adminCourses.collaborating.map((c: any, i: number) => (
-                      <CourseCard
-                        key={c.id}
-                        course={c}
-                        index={i}
-                        onSelect={handleOpenDetails}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
+        {/* DETALLE */}
+        <section className="col-span-8 rounded-[1.75rem] border border-[#e7e5e4] bg-white p-6 shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+          {!selectedAdmin ? (
+            <div className="flex h-full min-h-[50vh] flex-col items-center justify-center text-center">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e]">
+                <Users size={22} aria-hidden="true" />
+              </span>
+              <p className="mt-4 font-semibold">Elegí a alguien del equipo</p>
+              <p className="mt-1 max-w-xs text-sm text-[#57534e]">Vas a ver los cursos que tiene a cargo, en cuáles colabora y cómo van sus inscripciones.</p>
             </div>
           ) : (
-            <div className="h-[60vh] flex flex-col items-center justify-center text-center bg-[#0a0a0a] rounded-[2.5rem] border border-dashed border-white/5 p-10">
-              <Users className="text-white/5 mb-4" size={60} />
-              <p className="text-white/20 font-mono text-[11px] uppercase tracking-[0.3em]">
-                Selecciona un administrador para auditar
-              </p>
-            </div>
-          )}
-        </motion.div>
-
-        {/* DRAWER LATERAL */}
-        <AnimatePresence>
-          {selectedCourse && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
-                onClick={() => setSelectedCourse(null)}
-              />
-              <motion.div
-                variants={drawerVars}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="fixed top-0 right-0 h-screen w-full max-w-[400px] bg-[#0a0a0a] border-l border-white/10 z-[101] shadow-2xl p-8 flex flex-col"
-              >
-                <div className="flex items-center justify-between mb-10">
-                  <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">
-                    Detalles del <span className="text-[#FF6B00]">Curso</span>
-                  </h3>
+            <div>
+              <div className="flex items-start justify-between gap-4 border-b border-[#e7e5e4] pb-5">
+                <div className="flex items-center gap-4">
+                  <Avatar name={selectedAdmin.fullName} size="h-14 w-14 text-xl" />
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-[-0.02em]">{selectedAdmin.fullName}</h2>
+                    <p className="text-sm text-[#57534e]">
+                      @{selectedAdmin.username} · Administrador desde {sinceDate(selectedAdmin.createdAt)}
+                      {selectedAdmin._count?.articles ? ` · ${selectedAdmin._count.articles} artículos` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
                   <button
-                    onClick={() => setSelectedCourse(null)}
-                    className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40"
+                    type="button"
+                    onClick={() => setPending({ type: "revoke" })}
+                    className={`${pillButton} border border-[#e7e5e4] hover:bg-[#f5f5f4]`}
                   >
-                    <X size={24} />
+                    <ShieldOff size={16} aria-hidden="true" /> Quitar acceso
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPending({ type: "delete" })}
+                    aria-label={`Eliminar la cuenta de ${selectedAdmin.fullName}`}
+                    title="Eliminar cuenta"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] text-red-700 transition-colors hover:border-red-700 hover:bg-[#fef2f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  >
+                    <Trash2 size={16} />
                   </button>
                 </div>
+              </div>
 
-                <div className="space-y-8 flex-1">
-                  <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
-                    <p className="text-[10px] font-mono text-white/30 uppercase tracking-widest mb-2">
-                      Curso seleccionado
-                    </p>
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      {selectedCourse.name}
-                    </h2>
-                    <div className="flex items-center gap-3 p-3 bg-[#FF6B00]/5 rounded-2xl border border-[#FF6B00]/10">
-                      <UserCheck size={18} className="text-[#FF6B00]" />
-                      <div>
-                        <p className="text-[9px] font-mono text-[#FF6B00] uppercase">
-                          Creador Principal
-                        </p>
-                        <p className="text-sm font-bold text-white">
-                          {selectedAdmin?.fullName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
+              {loadingCourses || !adminCourses ? (
+                <div className="space-y-3 pt-5" aria-busy="true">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="h-16 animate-pulse rounded-2xl bg-[#f5f5f4]" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-6 pt-5">
                   <div>
-                    <h4 className="text-[10px] font-mono text-white/50 uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Users size={14} /> Colaboradores ({collaborators.length})
-                    </h4>
-
-                    <div className="space-y-4">
-                      {loadingColabs ? (
-                        <div className="flex justify-center py-10">
-                          <Loader2 className="animate-spin text-[#FF6B00]" />
-                        </div>
-                      ) : collaborators.length > 0 ? (
-                        collaborators.map((colab) => (
-                          <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            key={colab.id}
-                            className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5"
-                          >
-                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-[10px] font-bold text-white/40 uppercase">
-                              {colab.fullName[0]}
-                            </div>
-                            <div>
-                              <p className="text-[11px] font-bold text-white uppercase">
-                                {colab.fullName}
-                              </p>
-                              <p className="text-[9px] text-white/30 font-mono tracking-tighter">
-                                @{colab.username}
-                              </p>
-                            </div>
-                          </motion.div>
-                        ))
-                      ) : (
-                        <div className="p-8 text-center border border-dashed border-white/10 rounded-3xl">
-                          <Info
-                            className="mx-auto mb-2 text-white/10"
-                            size={20}
-                          />
-                          <p className="text-[10px] font-mono text-white/20 uppercase">
-                            Sin colaboradores extra asignados
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <h3 className="font-semibold">
+                      Cursos a cargo <span className="font-normal text-[#57534e]">· {adminCourses.created.length}</span>
+                    </h3>
+                    {adminCourses.created.length > 0 ? (
+                      <ul className="divide-y divide-[#e7e5e4]">
+                        {adminCourses.created.map((c: any) => (
+                          <CourseRow key={c.id} course={c} detail={c.collaborators ? `Colaboran: ${c.collaborators}` : "Sin colaboradores"} />
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-[#57534e]">No tiene cursos propios.</p>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">
+                      Colabora en <span className="font-normal text-[#57534e]">· {adminCourses.collaborating.length}</span>
+                    </h3>
+                    {adminCourses.collaborating.length > 0 ? (
+                      <ul className="divide-y divide-[#e7e5e4]">
+                        {adminCourses.collaborating.map((c: any) => (
+                          <CourseRow key={c.id} course={c} detail={`A cargo de ${c.createdBy}`} />
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-[#57534e]">No colabora en otros cursos.</p>
+                    )}
                   </div>
                 </div>
-
-                <button
-                  onClick={() => setSelectedCourse(null)}
-                  className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#FF6B00] hover:text-white transition-all mt-auto"
-                >
-                  Cerrar Panel
-                </button>
-              </motion.div>
-            </>
+              )}
+            </div>
           )}
-        </AnimatePresence>
+        </section>
       </div>
 
-      {/* MODAL ELIMINAR */}
+      <CreateStaffModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={loadData} />
+
+      {/* CONFIRMACIÓN: QUITAR ACCESO / ELIMINAR */}
       <AnimatePresence>
-        {showDeleteModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 backdrop-blur-md"
-            onClick={() => setShowDeleteModal(false)}
-          >
+        {pending && selectedAdmin && (
+          <div key="confirmar-staff" className="fixed inset-0 z-[7000] flex items-center justify-center p-4 font-[family-name:var(--font-poppins)]">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPending(null)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              className="bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-confirmar-staff"
+              initial={{ scale: 0.98, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.98, y: 8, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-md rounded-[2rem] bg-white p-8 text-center text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
             >
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
-                  <AlertTriangle size={30} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white uppercase tracking-tighter">
-                    Eliminar Cuenta
-                  </h3>
-                  <p className="text-[10px] font-mono text-white/40 uppercase">
-                    Esta acción no tiene vuelta atrás
-                  </p>
-                </div>
-              </div>
-              <p className="text-white/60 text-sm mb-8 leading-relaxed">
-                ¿Confirmas la eliminación total de{" "}
-                <span className="text-white font-bold">
-                  {selectedAdmin?.fullName}
-                </span>
-                ? Se borrarán sus accesos y privilegios.
+              <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full ${pending.type === "delete" ? "bg-[#fef2f2] text-red-700" : "bg-[#fff7ed] text-[#C2410C]"}`}>
+                {pending.type === "delete" ? <AlertTriangle size={24} aria-hidden="true" /> : <ShieldOff size={24} aria-hidden="true" />}
+              </span>
+              <h3 id="titulo-confirmar-staff" className="mt-4 text-2xl font-semibold tracking-[-0.02em]">
+                {pending.type === "delete" ? "¿Eliminar la cuenta?" : "¿Quitarle el acceso?"}
+              </h3>
+              <p className="mx-auto mt-2 max-w-xs text-sm text-[#57534e]">
+                {pending.type === "delete" ? (
+                  <>Se borran la cuenta de <span className="font-medium text-[#0a0a0a]">{selectedAdmin.fullName}</span> y sus artículos, y deja de figurar en sus cursos. No se puede deshacer.</>
+                ) : (
+                  <><span className="font-medium text-[#0a0a0a]">{selectedAdmin.fullName}</span> ya no podrá entrar al panel. Su cuenta y sus cursos se conservan.</>
+                )}
               </p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 py-4 bg-white/5 text-white/60 rounded-2xl font-bold text-[10px] uppercase border border-white/10"
-                >
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setPending(null)} disabled={working} className={`${pillButton} h-12 border border-[#e7e5e4] hover:bg-[#f5f5f4]`}>
                   Cancelar
                 </button>
                 <button
-                  onClick={handleDeleteAdminAction}
-                  className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-bold text-[10px] uppercase hover:bg-red-700 transition-colors"
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={working}
+                  className={`${pillButton} h-12 text-white disabled:opacity-80 ${pending.type === "delete" ? "bg-red-700 hover:bg-red-800 focus-visible:ring-red-700" : "bg-[#0a0a0a] hover:bg-[#292524]"}`}
                 >
-                  Confirmar
+                  {working && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+                  {pending.type === "delete" ? "Eliminar" : "Quitar acceso"}
                 </button>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

@@ -5,39 +5,56 @@ import {
   GraduationCap,
   Users,
   Copy,
-  AlertCircle,
   RefreshCw,
   X,
   Video,
   Trash2,
   Pencil,
   ShieldCheck,
-  Globe,
   Loader2,
-  Lock,
-  User as UserIcon,
+  CalendarDays,
+  PlayCircle,
 } from "lucide-react";
 import {
   getInfoCourses,
   updateCodeCourse,
   deleteCourse,
   updateCourse,
-  getCourses,
 } from "@/actions/course/courses";
 import { getCurrentUser } from "@/actions/auth/auth";
 import { Role } from "@/lib/types/definitions";
-import { toast, Toaster } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import StudentPerformanceTable from "./students/StudentPerformanceTable";
 import CourseCreate from "./CourseCreate";
 import CourseVideoManager from "./video/CourseVideoManager";
 import CourseCollaborators from "./CourseCollaborators";
 
+const inputClass =
+  "h-12 w-full rounded-xl border border-[#e7e5e4] bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-[border-color,box-shadow] duration-200 hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30";
+
+const iconButton =
+  "flex h-10 w-10 items-center justify-center rounded-full text-[#57534e] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]";
+
+const formatDate = (d: string | Date) =>
+  new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
+
+// Estado del curso según sus fechas de apertura y cierre
+function courseStatus(curso: any) {
+  const now = Date.now();
+  if (curso.openEnrollment && new Date(curso.openEnrollment).getTime() > now) {
+    return { label: `Abre el ${formatDate(curso.openEnrollment)}`, cls: "bg-[#fffbeb] text-amber-800" };
+  }
+  if (new Date(curso.deadline).getTime() < now) {
+    return { label: "Inscripción cerrada", cls: "bg-[#fef2f2] text-red-700" };
+  }
+  return { label: "Inscripción abierta", cls: "bg-[#ecfdf5] text-green-700" };
+}
+
 export default function CourseCommandCenter() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"mis-cursos">("mis-cursos");
   const [userRole, setUserRole] = useState<Role | null>(null);
 
   const [managingCourse, setManagingCourse] = useState<any | null>(null);
@@ -53,7 +70,6 @@ export default function CourseCommandCenter() {
     deadline: "",
   });
 
-  // 🔥 ACÁ ESTÁ LA CORRECCIÓN DEL BUCLE INFINITO
   const fetchCourses = useCallback(async (updateActiveModal = true) => {
     setLoading(true);
     try {
@@ -85,7 +101,7 @@ export default function CourseCommandCenter() {
     return () => {
       isMounted = false;
     };
-  }, [activeTab, fetchCourses]);
+  }, [fetchCourses]);
 
   const handleRefreshCode = async (id: string) => {
     const toastId = toast.loading("Regenerando código...");
@@ -139,6 +155,11 @@ export default function CourseCommandCenter() {
     setCourseToEdit(curso);
   };
 
+  const openManagement = (curso: any, type: "students" | "content" | "collaborators") => {
+    setManagingCourse(curso);
+    setManagementType(type);
+  };
+
   const filteredCourses = Array.isArray(courses)
     ? courses.filter((c) =>
         c?.name?.toLowerCase().includes(searchQuery?.toLowerCase() || ""),
@@ -146,185 +167,191 @@ export default function CourseCommandCenter() {
     : [];
 
   return (
-    <div className="w-full space-y-8">
-      <Toaster richColors theme="dark" />
-
-      {/* CABECERA */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-black text-white italic uppercase flex items-center gap-3">
-            {activeTab === "mis-cursos" ? (
-              <ShieldCheck className="text-[#FF6B00]" size={24} />
-            ) : (
-              <Globe className="text-blue-400" size={24} />
-            )}
-            {activeTab === "mis-cursos" ? "Mis Programas" : "Catálogo Global"}
-          </h2>
+    <div className="w-full space-y-5 text-[#0a0a0a]">
+      {/* BARRA DE HERRAMIENTAS */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative w-80">
+          <label htmlFor="buscar-curso" className="sr-only">
+            Buscar curso
+          </label>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]" size={16} aria-hidden="true" />
+          <input
+            id="buscar-curso"
+            type="search"
+            placeholder="Buscar curso…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`${inputClass} rounded-full pl-11`}
+          />
         </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative w-64 group">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
-              size={14}
-            />
-            <input
-              type="text"
-              placeholder="FILTRAR..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0f0f0f] border border-white/[0.08] rounded-xl py-2.5 pl-11 text-[10px] text-white outline-none"
-            />
-          </div>
-          <CourseCreate onSuccess={() => fetchCourses(false)} />
-        </div>
+        <CourseCreate onSuccess={() => fetchCourses(false)} />
       </div>
 
-      {/* GRID DE CURSOS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <AnimatePresence mode="popLayout">
-          {loading && courses.length === 0 ? (
-            <div className="col-span-full py-32 flex justify-center">
-              <Loader2 className="animate-spin text-[#FF6B00]" size={40} />
-            </div>
-          ) : (
-            filteredCourses.map((curso) => {
+      {/* LISTA DE CURSOS */}
+      {loading && courses.length === 0 ? (
+        <div className="space-y-4" aria-busy="true">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-40 animate-pulse rounded-[1.75rem] bg-[#f5f5f4]" />
+          ))}
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="rounded-[1.75rem] border border-[#e7e5e4] bg-white px-6 py-16 text-center">
+          <p className="font-semibold">{searchQuery ? "No hay cursos con ese nombre" : "Todavía no tenés cursos"}</p>
+          <p className="mt-1 text-sm text-[#57534e]">
+            {searchQuery ? "Probá con otra palabra." : "Creá el primero con el botón “Crear curso”."}
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-4">
+          <AnimatePresence mode="popLayout">
+            {filteredCourses.map((curso) => {
               const registered = curso._count?.courseRegistration || 0;
-              const fillPercent = Math.min(
-                100,
-                Math.round((registered / (curso.quotaLimit || 1)) * 100),
-              );
-              const isReadOnly = false;
+              const fillPercent = Math.min(100, Math.round((registered / (curso.quotaLimit || 1)) * 100));
+              const status = courseStatus(curso);
+              const videos = curso.video?.length || 0;
+              const collaborators = (curso.collaborators || []).map((c: any) => c.fullName);
 
               return (
-                <motion.div
+                <motion.li
                   layout
                   key={curso.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-[#0f0f0f] border border-white/[0.07] rounded-[2rem] overflow-hidden flex flex-col"
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                  className="rounded-[1.75rem] border border-[#e7e5e4] bg-white p-6 shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
                 >
-                  <div className="p-7 space-y-6 flex-1">
-                    <div className="flex justify-between">
-                      <div className="w-12 h-12 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-2xl flex items-center justify-center">
-                        <GraduationCap size={22} className="text-[#FF6B00]" />
-                      </div>
-                      {!isReadOnly && (
-                        <div className="flex gap-1 border-l border-white/10 pl-3">
-                          <button
-                            onClick={() => openEditModal(curso)}
-                            className="p-2 text-white/20 hover:text-white"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            onClick={() => setCourseToDelete(curso)}
-                            className="p-2 text-white/20 hover:text-red-400"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                  <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-8">
+                    {/* Nombre y responsables */}
+                    <div className="flex min-w-0 items-start gap-4">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#fff7ed] text-[#C2410C]">
+                        <GraduationCap size={20} aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-xl font-semibold capitalize tracking-[-0.01em]">{curso.name.toLowerCase()}</h3>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.cls}`}>{status.label}</span>
                         </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="text-xl font-black uppercase text-white line-clamp-2">
-                        {curso.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <UserIcon size={12} className="text-[#FF6B00]/60" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">
-                          Encargado:{" "}
-                          <span className="text-white/80">
-                            {curso.creator || "Sistema"}
+                        <p className="mt-1 truncate text-sm text-[#57534e]">
+                          A cargo de {curso.creator || "Sistema"}
+                          {collaborators.length > 0 && ` · con ${collaborators.join(", ")}`}
+                        </p>
+                        <p className="mt-2 flex items-center gap-4 text-sm text-[#57534e]">
+                          <span className="flex items-center gap-1.5">
+                            <CalendarDays size={14} aria-hidden="true" /> Cierra el {formatDate(curso.deadline)}
                           </span>
-                        </span>
+                          <span className="flex items-center gap-1.5">
+                            <PlayCircle size={14} aria-hidden="true" /> {videos} {videos === 1 ? "clase" : "clases"}
+                          </span>
+                        </p>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-[9px] font-black uppercase text-white/20">
-                        <span>Ocupación</span>
-                        <span>
-                          {registered} / {curso.quotaLimit}
+                    {/* Cupos */}
+                    <div>
+                      <div className="mb-1.5 flex justify-between text-sm">
+                        <span className="text-[#57534e]">Inscritos</span>
+                        <span className="font-medium tabular-nums">
+                          {registered} de {curso.quotaLimit}
                         </span>
                       </div>
-                      <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                      <div className="h-2 overflow-hidden rounded-full bg-[#f5f5f4]">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${fillPercent}%` }}
-                          className={`h-full ${isReadOnly ? "bg-white/10" : "bg-[#FF6B00]"}`}
+                          transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+                          className={`h-full rounded-full ${fillPercent >= 90 ? "bg-red-600" : "bg-[#FF6B00]"}`}
                         />
                       </div>
                     </div>
 
-                    {!isReadOnly && (
-                      <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.05] p-3 rounded-2xl">
-                        <code className="text-[11px] font-black text-[#FF6B00]">
-                          {curso.accessCode}
-                        </code>
-                        <div className="flex gap-2">
+                    {/* Código de acceso */}
+                    <div>
+                      <p className="mb-1.5 text-sm text-[#57534e]">Código de acceso</p>
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-[#fafaf9] py-1 pl-4 pr-1">
+                        <code className="text-base font-semibold tracking-[0.15em]">{curso.accessCode}</code>
+                        <div className="flex">
                           <button
+                            type="button"
                             onClick={() => {
                               navigator.clipboard.writeText(curso.accessCode);
-                              toast.success("Copiado");
+                              toast.success("Código copiado");
                             }}
-                            className="text-white/20 hover:text-white"
+                            aria-label="Copiar código"
+                            title="Copiar código"
+                            className={`${iconButton} hover:bg-white hover:text-[#0a0a0a]`}
                           >
-                            <Copy size={12} />
+                            <Copy size={16} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleRefreshCode(curso.id)}
-                            className="text-white/20 hover:text-[#FF6B00]"
+                            aria-label="Generar un código nuevo"
+                            title="Generar un código nuevo"
+                            className={`${iconButton} hover:bg-white hover:text-[#C2410C]`}
                           >
-                            <RefreshCw size={12} />
+                            <RefreshCw size={16} />
                           </button>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Editar / eliminar */}
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(curso)}
+                        aria-label={`Editar ${curso.name}`}
+                        title="Editar"
+                        className={`${iconButton} hover:bg-[#f5f5f4] hover:text-[#0a0a0a]`}
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCourseToDelete(curso)}
+                        aria-label={`Eliminar ${curso.name}`}
+                        title="Eliminar"
+                        className={`${iconButton} hover:bg-[#fef2f2] hover:text-red-700`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <div
-                    className={`grid ${curso.isOwner ? "grid-cols-3" : "grid-cols-2"} border-t border-white/[0.05]`}
-                  >
+
+                  {/* Acciones de gestión */}
+                  <div className="mt-5 flex flex-wrap gap-2 border-t border-[#e7e5e4] pt-5">
                     <button
-                      disabled={isReadOnly}
-                      onClick={() => {
-                        setManagingCourse(curso);
-                        setManagementType("students");
-                      }}
-                      className="py-5 text-[9px] font-black uppercase text-white/30 hover:bg-[#FF6B00] hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent"
+                      type="button"
+                      onClick={() => openManagement(curso, "students")}
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                     >
-                      Alumnos
+                      <Users size={16} aria-hidden="true" /> Alumnos
+                      <span className="rounded-full bg-white/15 px-2 text-xs tabular-nums">{registered}</span>
                     </button>
                     <button
-                      disabled={isReadOnly}
-                      onClick={() => {
-                        setManagingCourse(curso);
-                        setManagementType("content");
-                      }}
-                      className="py-5 text-[9px] font-black uppercase text-white/30 border-l border-white/[0.05] hover:bg-[#FF6B00] hover:text-white transition-all disabled:opacity-50 disabled:hover:bg-transparent"
+                      type="button"
+                      onClick={() => openManagement(curso, "content")}
+                      className="inline-flex h-11 items-center gap-2 rounded-full border border-[#e7e5e4] px-5 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                     >
-                      Contenido
+                      <Video size={16} aria-hidden="true" /> Contenido y evaluaciones
                     </button>
                     {curso.isOwner && (
                       <button
-                        onClick={() => {
-                          setManagingCourse(curso);
-                          setManagementType("collaborators");
-                        }}
-                        className="py-5 text-[9px] font-black uppercase text-white/30 border-l border-white/[0.05] hover:bg-[#FF6B00] hover:text-white transition-all"
+                        type="button"
+                        onClick={() => openManagement(curso, "collaborators")}
+                        className="inline-flex h-11 items-center gap-2 rounded-full border border-[#e7e5e4] px-5 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                       >
-                        Colab.
+                        <ShieldCheck size={16} aria-hidden="true" /> Colaboradores
                       </button>
                     )}
                   </div>
-                </motion.div>
+                </motion.li>
               );
-            })
-          )}
-        </AnimatePresence>
-      </div>
+            })}
+          </AnimatePresence>
+        </ul>
+      )}
 
       <CourseManagementOverlay
         isOpen={!!managingCourse}
@@ -340,83 +367,73 @@ export default function CourseCommandCenter() {
       {/* MODAL EDICIÓN */}
       <AnimatePresence>
         {courseToEdit && (
-          <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+          <div key="editar-curso" className="fixed inset-0 z-[7000] flex items-center justify-center p-4 font-[family-name:var(--font-poppins)]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setCourseToEdit(null)}
-              className="absolute inset-0 bg-black/95 backdrop-blur-md"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-[#0a0a0a] border border-white/10 w-full max-w-lg rounded-[2.5rem] p-10 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="titulo-editar-curso"
+              initial={{ scale: 0.98, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.98, y: 8, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-lg rounded-[2rem] bg-white p-8 text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
             >
-              <h3 className="text-2xl font-black uppercase italic text-white mb-6">
-                Editar <span className="text-[#FF6B00]">Curso</span>
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-white/30 uppercase ml-2">
-                    Nombre
-                  </label>
+              <h3 id="titulo-editar-curso" className="text-2xl font-semibold tracking-[-0.02em]">Editar curso</h3>
+              <div className="mt-6 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="editar-nombre" className="text-sm font-medium text-[#292524]">Nombre</label>
                   <input
+                    id="editar-nombre"
                     value={editFormData.name}
-                    onChange={(e) =>
-                      setEditFormData({ ...editFormData, name: e.target.value })
-                    }
-                    className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-white outline-none focus:border-[#FF6B00]"
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className={inputClass}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-white/30 uppercase ml-2">
-                      Cupos
-                    </label>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="editar-cupos" className="text-sm font-medium text-[#292524]">Cupos</label>
                     <input
+                      id="editar-cupos"
                       type="number"
+                      inputMode="numeric"
                       value={editFormData.quotaLimit}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          quotaLimit: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-white"
+                      onChange={(e) => setEditFormData({ ...editFormData, quotaLimit: parseInt(e.target.value) || 0 })}
+                      className={inputClass}
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-white/30 uppercase ml-2">
-                      Cierre
-                    </label>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="editar-cierre" className="text-sm font-medium text-[#292524]">Cierre de inscripción</label>
                     <input
+                      id="editar-cierre"
                       type="date"
                       value={editFormData.deadline}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          deadline: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-4 text-white [color-scheme:dark]"
+                      onChange={(e) => setEditFormData({ ...editFormData, deadline: e.target.value })}
+                      className={inputClass}
                     />
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 mt-8">
+              <div className="mt-8 flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setCourseToEdit(null)}
-                  className="flex-1 py-4 rounded-2xl font-bold uppercase text-[10px] text-white/40 bg-white/5"
+                  className="h-12 flex-1 rounded-full border border-[#e7e5e4] text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
                 >
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={handleSaveEdit}
-                  className="flex-1 py-4 rounded-2xl font-bold uppercase text-[10px] text-black bg-white hover:bg-[#FF6B00] hover:text-white transition-all"
+                  className="h-12 flex-1 rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-[transform,background-color] hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                 >
-                  Guardar
+                  Guardar cambios
                 </button>
               </div>
             </motion.div>
@@ -427,39 +444,45 @@ export default function CourseCommandCenter() {
       {/* MODAL ELIMINACIÓN */}
       <AnimatePresence>
         {courseToDelete && (
-          <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
+          <div key="borrar-curso" className="fixed inset-0 z-[7000] flex items-center justify-center p-4 font-[family-name:var(--font-poppins)]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setCourseToDelete(null)}
-              className="absolute inset-0 bg-black/95 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative bg-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-[2.5rem] p-8 text-center"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-borrar-curso"
+              initial={{ scale: 0.98, y: 12, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.98, y: 8, opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 text-center text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
             >
-              <Trash2 className="text-red-500 mx-auto mb-4" size={40} />
-              <h3 className="text-xl font-black uppercase text-white mb-2">
-                Eliminar Curso
-              </h3>
-              <p className="text-sm text-white/40 mb-6">
-                ¿Borrar "{courseToDelete.name}"?
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2] text-red-700">
+                <Trash2 size={22} aria-hidden="true" />
+              </span>
+              <h3 id="titulo-borrar-curso" className="mt-4 text-xl font-semibold tracking-[-0.01em]">¿Eliminar este curso?</h3>
+              <p className="mt-2 text-sm text-[#57534e]">
+                Se borra <span className="font-medium capitalize text-[#0a0a0a]">{courseToDelete.name.toLowerCase()}</span> con todas sus inscripciones. No se puede deshacer.
               </p>
-              <div className="flex gap-3">
+              <div className="mt-6 flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setCourseToDelete(null)}
-                  className="flex-1 py-3 bg-white/5 text-white/40 hover:text-white rounded-xl font-bold uppercase text-[10px] transition-all"
+                  className="h-12 flex-1 rounded-full border border-[#e7e5e4] text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
                 >
-                  No
+                  Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={handleConfirmDelete}
-                  className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold uppercase text-[10px] transition-all"
+                  className="h-12 flex-1 rounded-full bg-red-700 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
                 >
-                  Sí, eliminar
+                  Eliminar
                 </button>
               </div>
             </motion.div>
@@ -470,6 +493,7 @@ export default function CourseCommandCenter() {
   );
 }
 
+// Pantalla completa de gestión: sigue en oscuro porque sus componentes internos todavía son oscuros
 function CourseManagementOverlay({ isOpen, onClose, course, type }: any) {
   const isStudents = type === "students";
   const isContent = type === "content";
@@ -510,6 +534,7 @@ function CourseManagementOverlay({ isOpen, onClose, course, type }: any) {
             </div>
             <button
               onClick={onClose}
+              aria-label="Cerrar"
               className="w-12 h-12 bg-white/5 rounded-full text-white/40 hover:text-white flex items-center justify-center transition-all"
             >
               <X size={24} />

@@ -236,18 +236,14 @@ export default function Page() {
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                className="max-w-7xl mx-auto px-6 pb-20 flex justify-center md:justify-end"
+                className="mx-auto flex max-w-6xl justify-center px-6 pb-20 md:justify-start font-[family-name:var(--font-poppins)]"
               >
                 <Link
                   href="/testimonios"
-                  className="group flex items-center gap-4 bg-[#f5f5f4] hover:bg-[#FF6B00] border border-[#e7e5e4] hover:border-[#FF6B00] px-8 py-4 rounded-2xl transition-all duration-500"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-[#e7e5e4] px-6 text-sm font-medium text-[#0a0a0a] transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#0a0a0a]">
-                    Explorar todos los testimonios
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-[#f5f5f4] flex items-center justify-center group-hover:bg-black/20 transition-colors">
-                    <ArrowUpRight size={16} className="text-[#0a0a0a]" />
-                  </div>
+                  Ver todos los testimonios
+                  <ArrowUpRight size={16} aria-hidden="true" />
                 </Link>
               </motion.div>
             )}
@@ -262,18 +258,14 @@ export default function Page() {
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                className="max-w-7xl mx-auto px-6 pb-20 flex justify-center md:justify-end"
+                className="mx-auto flex max-w-6xl justify-center px-6 pb-20 md:justify-start font-[family-name:var(--font-poppins)]"
               >
                 <Link
                   href="/articulos"
-                  className="group flex items-center gap-4 bg-[#f5f5f4] hover:bg-[#FF6B00] border border-[#e7e5e4] hover:border-[#FF6B00] px-8 py-4 rounded-2xl transition-all duration-500"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-[#e7e5e4] px-6 text-sm font-medium text-[#0a0a0a] transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#0a0a0a]">
-                    Explorar todo el blog
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-[#f5f5f4] flex items-center justify-center group-hover:bg-black/20 transition-colors">
-                    <ArrowUpRight size={16} className="text-[#0a0a0a]" />
-                  </div>
+                  Ver todos los artículos
+                  <ArrowUpRight size={16} aria-hidden="true" />
                 </Link>
               </motion.div>
             )}

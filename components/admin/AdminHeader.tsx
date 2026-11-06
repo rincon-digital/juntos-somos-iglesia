@@ -1,38 +1,43 @@
 "use client";
+// Navegación del admin: cápsula flotante (a la izquierda en escritorio, abajo en celular)
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, X, BookOpen, FileText, Star, Users, Home } from "lucide-react";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LogOut, BookOpen, FileText, Star, Users, Home, Settings } from "lucide-react";
 import { logout } from "@/actions/auth/auth";
-import Image from "next/image";
 import { validateSessionUser } from "@/actions/user";
 import { Role } from "@/lib/types/definitions";
 
 const navItems = [
   { label: "Inicio", href: "/admin", icon: Home, roles: [Role.admin, Role.superadmin] },
-  {
-    label: "Programas",
-    href: "/admin/courses",
-    icon: BookOpen,
-    roles: [Role.admin, Role.superadmin],
-  },
+  { label: "Programas", href: "/admin/courses", icon: BookOpen, roles: [Role.admin, Role.superadmin] },
   { label: "Artículos", href: "/admin/articles", icon: FileText, roles: [Role.superadmin] },
   { label: "Testimonios", href: "/admin/testimony", icon: Star, roles: [Role.superadmin] },
   { label: "Usuarios", href: "/admin/usuarios", icon: Users, roles: [Role.superadmin] },
+  { label: "Configuración", href: "/admin/settings", icon: Settings, roles: [Role.admin, Role.superadmin] },
 ];
+
+const itemBase =
+  "group relative flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]";
+
+// Etiqueta que aparece al pasar el mouse (solo escritorio)
+function HoverLabel({ text }: { text: string }) {
+  return (
+    <span className="pointer-events-none absolute left-full top-1/2 ml-4 hidden -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-full bg-[#0a0a0a] px-3 py-1.5 text-sm font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-[opacity,transform] duration-200 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 lg:block">
+      {text}
+    </span>
+  );
+}
 
 export default function AdminHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const [userRole, setUserRole] = useState<Role | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchRole = async () => {
       const session = await validateSessionUser();
-      if (session?.role) {
-        setUserRole(session.role as Role);
-      }
+      if (session?.role) setUserRole(session.role as Role);
     };
     fetchRole();
   }, []);
@@ -42,137 +47,61 @@ export default function AdminHeader() {
     window.location.href = "/";
   };
 
-  const handleNavClick = (href: string) => {
-    router.push(href);
-    setMobileMenuOpen(false);
-  };
-
-  const filteredNavItems = navItems.filter(
-    (item) => userRole && item.roles.includes(userRole),
-  );
+  const items = navItems.filter((item) => userRole && item.roles.includes(userRole));
 
   return (
-    <div className="flex flex-col gap-6 mb-8 w-full">
-      <div className="w-full flex justify-center">
-        <motion.nav
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex justify-between items-center w-full max-w-5xl bg-[#050505]/95 md:bg-black/60 backdrop-blur-none md:backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl shadow-2xl transition-all duration-500"
-        >
-          {/* LOGO */}
-          <div className="flex items-center gap-3 group">
-            <div className="bg-[#FF6B00] rounded-full w-9 h-9 flex items-center justify-center">
-              <Image
-                src="/Logo.webp"
-                alt="Logo"
-                width={20}
-                height={20}
-                className="brightness-0 invert"
+    <motion.nav
+      aria-label="Navegación del panel"
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+      className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-fit items-center gap-1 rounded-full bg-[#0a0a0a] p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.25)] font-[family-name:var(--font-poppins)] lg:inset-x-auto lg:bottom-auto lg:left-5 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:gap-1.5 lg:p-2"
+    >
+      <Link
+        href="/"
+        aria-label="Ir a la web de la iglesia"
+        className={`${itemBase} mb-1 hidden bg-[#FF6B00] lg:flex`}
+      >
+        <img src="/Logo.webp" alt="" aria-hidden="true" className="h-5 w-5 brightness-0 invert" />
+        <HoverLabel text="Ver la web" />
+      </Link>
+
+      {items.map((item) => {
+        const isActive =
+          pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
+            className={`${itemBase} ${isActive ? "text-black" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="admin-nav-activo"
+                className="absolute inset-0 rounded-full bg-[#FF6B00]"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.45 }}
               />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-white/40 font-black uppercase text-[8px] tracking-tighter">
-                PANEL
-              </span>
-              <span className="text-[#FF6B00] font-black uppercase tracking-tighter italic text-lg">
-                {userRole === Role.superadmin ? "SUPER ADMIN" : "ADMIN"}
-              </span>
-            </div>
-          </div>
+            )}
+            <Icon size={18} className="relative" aria-hidden="true" />
+            <HoverLabel text={item.label} />
+          </Link>
+        );
+      })}
 
-          {/* MENU DESKTOP */}
-          <div className="hidden lg:flex items-center gap-2">
-            {filteredNavItems.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href !== "/admin" && pathname.startsWith(item.href));
-              const Icon = item.icon;
+      <span aria-hidden="true" className="mx-1 h-6 w-px bg-white/15 lg:mx-0 lg:my-1 lg:h-px lg:w-6" />
 
-              return (
-                <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
-                  className={`flex items-center gap-2 px-3 py-2 transition-all font-bold uppercase tracking-[0.15em] text-[9px] relative ${
-                    isActive ? "text-white" : "text-white/50 hover:text-white"
-                  }`}
-                >
-                  <Icon size={12} />
-                  {item.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="adminNavUnderline"
-                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#FF6B00]"
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* BOTON MENU MOBILE */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-white/70 hover:text-white"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-
-          {/* LOGOUT - solo desktop */}
-          <button
-            onClick={handleLogout}
-            className="hidden lg:flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full font-black uppercase tracking-widest text-[9px] transition-all hover:bg-[#FF6B00] hover:text-white"
-          >
-            <LogOut size={10} />
-            <span className="hidden xl:inline">Cerrar Sesión</span>
-          </button>
-        </motion.nav>
-      </div>
-
-      {/* MENU MOBILE */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed inset-0 top-24 z-50 mx-4 bg-[#050505] backdrop-blur-none border border-white/10 rounded-2xl overflow-hidden"
-            style={{ position: 'fixed', top: '5rem' }}
-          >
-            <div className="p-2 space-y-1 mt-2">
-              {filteredNavItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/admin" && pathname.startsWith(item.href));
-                const Icon = item.icon;
-
-                return (
-                  <button
-                    key={item.href}
-                    onClick={() => handleNavClick(item.href)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold uppercase tracking-[0.15em] text-[10px] ${
-                      isActive
-                        ? "bg-[#FF6B00]/20 text-[#FF6B00]"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon size={16} />
-                    {item.label}
-                  </button>
-                );
-              })}
-              <hr className="border-white/10 my-2" />
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold uppercase tracking-[0.15em] text-[10px] text-red-400 hover:bg-red-500/10"
-              >
-                <LogOut size={16} />
-                Cerrar Sesión
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        aria-label="Cerrar sesión"
+        className={`${itemBase} text-white/70 hover:bg-red-500/20 hover:text-red-300`}
+      >
+        <LogOut size={18} aria-hidden="true" />
+        <HoverLabel text="Cerrar sesión" />
+      </button>
+    </motion.nav>
   );
 }

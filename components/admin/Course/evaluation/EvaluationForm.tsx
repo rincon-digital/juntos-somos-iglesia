@@ -5,7 +5,7 @@ import {
   createEvaluationVideo,
   updateEvaluationVideo,
 } from "@/actions/course/video/evaluations/video.evaluations";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 
 interface EvaluationFormProps {

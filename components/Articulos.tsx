@@ -1,9 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getArticles } from "@/actions/articles/articles";
 import { motion } from "framer-motion";
-import { FileText, ArrowRight, User, Inbox, MessageCircle, Facebook, Instagram } from "lucide-react";
-import { editorStyles } from "./admin/article/RichTextEditor";
 import Link from "next/link";
 
 interface ArticulosProps {
@@ -11,7 +9,10 @@ interface ArticulosProps {
   limit?: number;
 }
 
-export default function Articulos({ onModalChange, limit }: ArticulosProps) {
+// Hoy el admin solo sube imágenes; si algún día llega un video, se muestra su primer cuadro
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
+
+export default function Articulos({ limit }: ArticulosProps) {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,159 +33,140 @@ export default function Articulos({ onModalChange, limit }: ArticulosProps) {
       .trim();
   };
 
-  return (
-    <section id="articulos" className="py-10 px-4 max-w-7xl mx-auto relative z-20">
-      <style>{editorStyles}</style>
+  // Con cantidad impar, el primero ocupa todo el ancho para que la grilla cierre pareja
+  const featureFirst = articles.length % 2 === 1;
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-        <div>
-          <div className="flex items-center gap-4 mb-4">
-            <span className="h-[2px] w-12 bg-[#FF6B00]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.6em] text-[#C2410C]">
-              Blog & Enseñanzas
-            </span>
-          </div>
-          <h2 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-none text-[#0a0a0a]">
+  return (
+    <section
+      id="articulos"
+      className="relative z-20 scroll-mt-12 px-6 py-24 text-[#0a0a0a] font-[family-name:var(--font-poppins)]"
+    >
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-12 max-w-xl">
+          <h2 className="text-4xl font-semibold tracking-[-0.03em] text-balance md:text-5xl">
             Artículos
           </h2>
-        </div>
-      </div>
-
-      {/* CONTENIDO / GRILLA */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[...Array(limit || 3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-[400px] bg-[#f5f5f4] rounded-[3rem] animate-pulse"
-            />
-          ))}
-        </div>
-      ) : articles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article, idx) => (
-            <ArticleCard
-              key={article.slug || article.id}
-              article={article}
-              idx={idx}
-              previewText={getPreviewText(article.content)}
-            />
-          ))}
-        </div>
-      ) : (
-        /* MENSAJE CUANDO NO HAY ARTÍCULOS */
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center py-20 px-6 border border-[#e7e5e4] bg-[#f5f5f4] rounded-[3rem] text-center"
-        >
-          <div className="w-20 h-20 bg-[#f5f5f4] rounded-full flex items-center justify-center mb-6">
-            <Inbox size={40} className="text-[#57534e]" />
-          </div>
-          <h3 className="text-2xl font-bold text-[#0a0a0a] mb-2 uppercase italic tracking-tighter">
-            Próximamente más contenido
-          </h3>
-          <p className="text-[#57534e] max-w-sm text-sm font-medium">
-            Estamos preparando nuevas enseñanzas y artículos para ti. Vuelve
-            pronto para descubrir lo que tenemos preparado.
+          <p className="mt-3 text-base text-[#57534e]">
+            Enseñanzas y noticias de nuestra iglesia.
           </p>
-        </motion.div>
-      )}
+        </header>
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {[...Array(limit && limit < 3 ? limit : 2)].map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[4/5] animate-pulse rounded-[2rem] bg-[#f5f5f4] sm:aspect-[16/10]"
+              />
+            ))}
+          </div>
+        ) : articles.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {articles.map((article, idx) => (
+              <ArticleCard
+                key={article.slug || article.id}
+                article={article}
+                idx={idx}
+                featured={featureFirst && idx === 0}
+                previewText={getPreviewText(article.content)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[2rem] border border-[#e7e5e4] px-6 py-16 text-center">
+            <h3 className="text-xl font-semibold">Todavía no hay artículos</h3>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-[#57534e]">
+              Estamos preparando nuevas enseñanzas. Volvé pronto.
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
-// Subcomponente ArticleCard
-function ArticleCard({ article, idx, previewText }: any) {
-  const shareUrl = `https://jsioficial.com/articulos/${article.slug}`;
-  const shareText = `Lee este artículo: ${article.title}`;
-
-  const shareLinks = {
-    whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + " " + shareUrl)}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
-    instagram: `https://www.instagram.com/`, 
-  };
-
-  const handleShare = (e: React.MouseEvent, url: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+function ArticleCard({ article, idx, featured, previewText }: any) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const media: string | null = article.imageUrl || null;
+  const isVideo = media ? isVideoUrl(media) : false;
+  const date = new Date(article.createdAt).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <Link href={`/articulos/${article.slug}`}>
-      <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ delay: idx * 0.1 }}
-        className="group cursor-pointer bg-white border border-[#e7e5e4] rounded-[3rem] overflow-hidden hover:border-[#FF6B00]/40 transition-all duration-500 flex flex-col h-[400px]"
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay: idx * 0.06, ease: [0.23, 1, 0.32, 1] }}
+      className={featured ? "lg:col-span-2" : ""}
+    >
+      <Link
+        href={`/articulos/${article.slug}`}
+        onMouseEnter={() => videoRef.current?.play().catch(() => {})}
+        onMouseLeave={() => videoRef.current?.pause()}
+        className={`group relative block aspect-[4/5] overflow-hidden rounded-[2rem] bg-[#0a0a0a] text-white shadow-[0_12px_30px_rgba(0,0,0,0.12)] outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 sm:aspect-[16/10] ${
+          featured ? "lg:aspect-[21/9]" : ""
+        }`}
       >
-        <div className="relative h-[50%] w-full overflow-hidden bg-[#f5f5f4] flex items-center justify-center">
-          {article.imageUrl ? (
-            <img
-              src={article.imageUrl}
-              alt={article.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700"
+        {media ? (
+          isVideo ? (
+            <video
+              ref={videoRef}
+              src={`${media}#t=0.1`}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
-            <FileText
-              size={40}
-              className="text-[#d6d3d1] group-hover:text-[#C2410C]/50 transition-colors"
+            <img
+              src={media}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
+          )
+        ) : (
+          <img
+            src="/Logo.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute -bottom-16 -right-16 w-72 opacity-[0.12]"
+          />
+        )}
+
+        {/* Legibilidad arriba y desenfoque progresivo abajo, como en la referencia */}
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-[70%] bg-gradient-to-t from-black/75 via-black/35 to-transparent backdrop-blur-xl [mask-image:linear-gradient(to_top,black_40%,transparent)]" />
+
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-4 p-6 text-sm md:px-8">
+          <span className="font-semibold">Juntos Somos Iglesia</span>
+          <time dateTime={article.createdAt} className="text-white/90">
+            {date}
+          </time>
         </div>
 
-        <div className="p-8 flex-1 flex flex-col justify-between relative z-10 -mt-6">
-          <div>
-            <span className="inline-flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.3em] text-[#C2410C] mb-3 bg-[#FF6B00]/10 px-3 py-1.5 rounded-full border border-[#FF6B00]/20">
-              <User size={10} /> {article.author?.fullName || "Iglesia"}
-            </span>
-            <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-[1.1] text-[#0a0a0a] group-hover:text-[#C2410C] transition-colors line-clamp-2">
+        <div className="absolute inset-x-0 bottom-0 flex flex-col items-start gap-5 p-6 sm:flex-row sm:items-end sm:justify-between md:p-8">
+          <div className="max-w-xl">
+            <h3 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-[-0.02em] text-balance md:text-3xl">
               {article.title}
             </h3>
-            <p className="text-[10px] text-[#57534e] italic line-clamp-2 mt-2">
-              {previewText}
-            </p>
+            {previewText && (
+              <p className="mt-2 line-clamp-2 text-sm text-white/85 md:text-base">
+                {previewText}
+              </p>
+            )}
           </div>
-          
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#57534e] group-hover:text-[#0a0a0a] transition-colors">
-              Leer Artículo{" "}
-              <ArrowRight
-                size={14}
-                className="group-hover:translate-x-2 transition-transform"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={(e) => handleShare(e, shareLinks.whatsapp)}
-                className="w-8 h-8 rounded-full bg-[#f5f5f4] border border-[#e7e5e4] flex items-center justify-center text-[#57534e] hover:bg-green-500 hover:text-white hover:border-green-500 transition-all"
-                title="Compartir en WhatsApp"
-              >
-                <MessageCircle size={14} />
-              </button>
-              <button 
-                onClick={(e) => handleShare(e, shareLinks.facebook)}
-                className="w-8 h-8 rounded-full bg-[#f5f5f4] border border-[#e7e5e4] flex items-center justify-center text-[#57534e] hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
-                title="Compartir en Facebook"
-              >
-                <Facebook size={14} />
-              </button>
-              <button 
-                onClick={(e) => handleShare(e, shareLinks.instagram)}
-                className="w-8 h-8 rounded-full bg-[#f5f5f4] border border-[#e7e5e4] flex items-center justify-center text-[#57534e] hover:bg-pink-600 hover:text-white hover:border-pink-600 transition-all"
-                title="Ir a Instagram"
-              >
-                <Instagram size={14} />
-              </button>
-            </div>
-          </div>
+          <span className="inline-flex h-11 shrink-0 items-center rounded-full border border-white/25 bg-white/20 px-5 text-sm font-medium backdrop-blur-md transition-colors duration-200 group-hover:bg-white/30">
+            Leer más
+          </span>
         </div>
-      </motion.div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }

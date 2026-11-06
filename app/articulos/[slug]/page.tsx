@@ -1,19 +1,9 @@
 import { Metadata, ResolvingMetadata } from "next";
 import prisma from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
-import { 
-  Calendar, 
-  User, 
-  ArrowLeft, 
-  Share2, 
-  MessageCircle, 
-  Instagram, 
-  Facebook,
-  FileText
-} from "lucide-react";
+import { Calendar, User, ArrowLeft, MessageCircle, Instagram, Facebook } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { editorStyles } from "@/components/admin/article/RichTextEditor";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -58,16 +48,13 @@ function RichContent({ html }: { html: string }) {
   const isHtml = html?.startsWith("<");
   if (!isHtml) {
     return (
-      <p className="text-white/70 text-lg md:text-xl leading-relaxed whitespace-pre-wrap italic font-light">
+      <p className="whitespace-pre-wrap text-lg leading-relaxed text-[#44403c]">
         {html}
       </p>
     );
   }
-  return (
-    <div className="tiptap-editor prose prose-invert max-w-none">
-      <div dangerouslySetInnerHTML={{ __html: html }} />
-    </div>
-  );
+  // article-body (globals.css) da estilos claros; tiptap-editor queda para el editor oscuro del admin
+  return <div className="article-body" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 export default async function ArticleDetailPage({ params }: Props) {
@@ -102,169 +89,145 @@ export default async function ArticleDetailPage({ params }: Props) {
     });
   };
 
+  const shareButton =
+    "flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] bg-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2";
+
   return (
-    <main className="min-h-screen bg-[#080808] text-white selection:bg-[#FF6B00] selection:text-white">
-      <style>{editorStyles}</style>
-      
+    <main className="min-h-screen bg-white text-[#0a0a0a] selection:bg-[#FF6B00] selection:text-black font-[family-name:var(--font-poppins)]">
       <Navbar />
 
-      {/* HEADER DE NAVEGACIÓN */}
-      <div className="pt-32 pb-10 px-6 max-w-7xl mx-auto flex items-center justify-between">
-        <Link 
-          href="/articulos"
-          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/40 hover:text-[#FF6B00] transition-colors"
+      {/* NAVEGACIÓN Y COMPARTIR */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 pb-10 pt-32">
+        <Link
+          href="/#articulos"
+          className="group inline-flex h-11 items-center gap-2 rounded-full border border-[#e7e5e4] pl-2 pr-5 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
         >
-          <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-[#FF6B00]/30 transition-colors">
-            <ArrowLeft size={14} />
-          </div>
-          Volver al Blog
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f5f4] transition-colors group-hover:bg-white">
+            <ArrowLeft size={16} aria-hidden="true" />
+          </span>
+          Volver a artículos
         </Link>
 
-        <div className="flex items-center gap-4">
-           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 hidden md:block">
-            Compartir artículo
-           </span>
-           <div className="flex gap-2">
-              <a 
-                href={shareLinks.whatsapp} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-500 hover:bg-green-500 hover:text-white transition-all shadow-[0_0_15px_rgba(34,197,94,0.1)]"
-                title="Compartir en WhatsApp"
-              >
-                <MessageCircle size={18} />
-              </a>
-              <a 
-                href={shareLinks.facebook} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-[0_0_15px_rgba(37,99,235,0.1)]"
-                title="Compartir en Facebook"
-              >
-                <Facebook size={18} />
-              </a>
-              <a 
-                href={shareLinks.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-pink-600/10 border border-pink-600/20 flex items-center justify-center text-pink-600 hover:bg-pink-600 hover:text-white transition-all shadow-[0_0_15px_rgba(219,39,119,0.1)]"
-                title="Ir a Instagram"
-              >
-                <Instagram size={18} />
-              </a>
-           </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-sm text-[#57534e] md:block">Compartir</span>
+          <div className="flex gap-2">
+            <a
+              href={shareLinks.whatsapp}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Compartir en WhatsApp"
+              className={`${shareButton} text-green-700 hover:border-green-700 hover:bg-green-50`}
+            >
+              <MessageCircle size={18} aria-hidden="true" />
+            </a>
+            <a
+              href={shareLinks.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Compartir en Facebook"
+              className={`${shareButton} text-blue-700 hover:border-blue-700 hover:bg-blue-50`}
+            >
+              <Facebook size={18} aria-hidden="true" />
+            </a>
+            <a
+              href={shareLinks.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Ir a Instagram"
+              className={`${shareButton} text-pink-700 hover:border-pink-700 hover:bg-pink-50`}
+            >
+              <Instagram size={18} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </div>
 
-      <article className="max-w-7xl mx-auto px-6 pb-32">
-        <div className="flex flex-col md:flex-row gap-12 lg:gap-20">
-          
-          {/* COLUMNA IZQUIERDA: IMAGEN Y METADATOS */}
+      <article className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="flex flex-col gap-12 md:flex-row lg:gap-16">
+          {/* COLUMNA IZQUIERDA: IMAGEN Y DATOS */}
           <div className="w-full md:w-5/12">
-            <div className="sticky top-32 space-y-8">
-              <div className="relative aspect-[4/5] w-full rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-[#0a0a0a]">
+            <div className="sticky top-32 space-y-6">
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-[#0a0a0a] shadow-[0_12px_30px_rgba(0,0,0,0.12)]">
                 {article.imageUrl ? (
-                  <img 
-                    src={article.imageUrl} 
+                  <img
+                    src={article.imageUrl}
                     alt={article.title}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/5">
-                    <FileText size={120} />
-                  </div>
+                  <img
+                    src="/Logo.webp"
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute -bottom-16 -right-16 w-72 opacity-[0.12]"
+                  />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent opacity-60" />
               </div>
 
-              <div className="flex flex-col gap-6 p-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem]">
+              <dl className="flex flex-col gap-5 rounded-[1.75rem] border border-[#e7e5e4] p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center">
-                    <User size={20} className="text-[#FF6B00]" />
-                  </div>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff7ed] text-[#C2410C]">
+                    <User size={18} aria-hidden="true" />
+                  </span>
                   <div>
-                    <p className="text-[10px] font-black uppercase text-[#FF6B00] tracking-widest">Autor</p>
-                    <p className="text-sm font-bold text-white">{article.author?.fullName || "Juntos Somos Iglesia"}</p>
+                    <dt className="text-sm text-[#57534e]">Autor</dt>
+                    <dd className="font-medium">{article.author?.fullName || "Juntos Somos Iglesia"}</dd>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/30">
-                    <Calendar size={20} />
-                  </div>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e]">
+                    <Calendar size={18} aria-hidden="true" />
+                  </span>
                   <div>
-                    <p className="text-[10px] font-black uppercase text-white/30 tracking-widest">Publicado</p>
-                    <p className="text-sm font-bold text-white">{formatDate(article.createdAt)}</p>
+                    <dt className="text-sm text-[#57534e]">Publicado</dt>
+                    <dd className="font-medium">
+                      <time dateTime={article.createdAt.toISOString()}>{formatDate(article.createdAt)}</time>
+                    </dd>
                   </div>
                 </div>
-              </div>
+              </dl>
             </div>
           </div>
 
           {/* COLUMNA DERECHA: CONTENIDO */}
           <div className="w-full md:w-7/12">
-            <header className="mb-12">
-              <div className="flex items-center gap-4 mb-6">
-                <span className="h-[2px] w-12 bg-[#FF6B00]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.6em] text-[#FF6B00]">
-                  Lectura Recomendada
-                </span>
+            <h1 className="mb-8 text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-balance lg:text-6xl">
+              {article.title}
+            </h1>
+
+            <RichContent html={article.content} />
+
+            {/* COMPARTIR AL FINAL */}
+            <div className="mt-16 rounded-[2rem] bg-[#FF6B00] p-8 text-black md:p-10">
+              <h2 className="text-2xl font-semibold tracking-[-0.02em]">¿Te gustó esta enseñanza?</h2>
+              <p className="mt-2 max-w-md">
+                Compartila con tus amigos y familiares para que llegue a más personas.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a
+                  href={shareLinks.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-black px-6 text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#FF6B00]"
+                >
+                  <MessageCircle size={16} aria-hidden="true" /> WhatsApp
+                </a>
+                <a
+                  href={shareLinks.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-sm font-medium text-black transition-[transform,background-color] duration-200 hover:bg-[#f5f5f4] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-[#FF6B00]"
+                >
+                  <Facebook size={16} aria-hidden="true" /> Facebook
+                </a>
               </div>
-              <h1 className="text-5xl lg:text-7xl font-black uppercase italic tracking-tighter leading-[0.9] text-white">
-                {article.title}
-              </h1>
-            </header>
-
-            <div className="relative">
-               {/* Comillas decorativas gigantes */}
-               <span className="absolute -left-12 -top-12 text-[15rem] font-black text-white/[0.02] pointer-events-none select-none italic">
-                “
-               </span>
-               
-               <div className="relative z-10">
-                <RichContent html={article.content} />
-               </div>
-            </div>
-
-            {/* CTA FINAL / COMPARTIR */}
-            <div className="mt-20 p-10 bg-[#FF6B00] rounded-[3rem] text-black relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-[80px] -mr-32 -mt-32 transition-transform duration-700 group-hover:scale-125" />
-               
-               <div className="relative z-10">
-                 <h3 className="text-3xl font-black uppercase italic tracking-tighter mb-4">
-                   ¿Te gustó esta enseñanza?
-                 </h3>
-                 <p className="font-bold text-sm mb-8 max-w-md opacity-80 uppercase tracking-tight">
-                   Ayúdanos a llegar a más personas compartiendo este mensaje con tus amigos y familiares.
-                 </p>
-                 
-                 <div className="flex flex-wrap gap-4">
-                    <a 
-                      href={shareLinks.whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 bg-black text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-white hover:text-black transition-all"
-                    >
-                      <MessageCircle size={16} /> WhatsApp
-                    </a>
-                    <a 
-                      href={shareLinks.facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 bg-white/20 backdrop-blur-md text-black border border-black/10 px-8 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-white transition-all"
-                    >
-                      <Facebook size={16} /> Facebook
-                    </a>
-                 </div>
-               </div>
             </div>
           </div>
-
         </div>
       </article>
 
-      <footer className="py-20 text-center border-t border-white/5 text-[10px] font-black tracking-[0.3em] uppercase text-white/20">
-        © {new Date().getFullYear()} JUNTOS SOMOS IGLESIA — DIGITALIZA TU PASIÓN
+      <footer className="border-t border-[#e7e5e4] py-12 text-center text-sm text-[#57534e]">
+        © {new Date().getFullYear()} Juntos Somos Iglesia
       </footer>
     </main>
   );

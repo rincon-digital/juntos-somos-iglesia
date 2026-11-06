@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Toaster } from "sonner";
+import { Toaster } from "@/lib/toast";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { getCurrentUser } from "@/actions/auth/auth";
 
@@ -29,20 +29,22 @@ export default function ClientLayout({
     checkUser();
   }, [router]);
 
+  // Secciones ya rediseñadas en claro; el resto sigue en oscuro por ahora
+  const isLight = ["/admin", "/admin/courses", "/admin/articles", "/admin/testimony", "/admin/usuarios"].includes(pathname);
+  const shell = isLight ? "bg-[#fafaf9] text-[#0a0a0a]" : "bg-[#070707] text-white";
+
   // Si aún está cargando el usuario, evitamos flashes de contenido
-  if (!user) return <div className="bg-[#070707] min-h-screen" />;
+  if (!user) return <div className={`${shell} min-h-screen`} />;
 
   return (
-    <main className="bg-[#070707] min-h-screen text-white p-4 md:p-7">
+    <main className={`${shell} min-h-screen p-4 pb-28 md:p-7 md:pb-28 lg:pb-7 lg:pl-28`}>
       <Toaster position="bottom-right" richColors theme="dark" />
 
-      <div className="max-w-[1280px] mx-auto space-y-6">
-        {/* Header con info del pastor y reloj */}
-        <AdminHeader />
+      {/* Cápsula de navegación */}
+      <AdminHeader />
 
-        {/* Contenido dinámico de las páginas */}
-        <div className="min-h-[60vh]">{children}</div>
-      </div>
+      {/* Contenido dinámico de las páginas */}
+      <div className="mx-auto min-h-[60vh] max-w-[1280px]">{children}</div>
     </main>
   );
 }

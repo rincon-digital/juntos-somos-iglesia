@@ -23,7 +23,7 @@ import {
 } from "@/actions/course/students/students.course";
 import { resetStudentAttempts } from "@/actions/user_course/evaluations/user.evaluations";
 import { updateUserRank } from "@/actions/auth/management.users";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useRouter } from "next/navigation";

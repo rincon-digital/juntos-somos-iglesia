@@ -134,6 +134,100 @@ html {
   }
 }
 
+/* Testimonios: curvas hacia adentro que unen la pestaña del nombre con la tarjeta */
+.testimonio-tab::before,
+.testimonio-tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.testimonio-tab::before {
+  right: 100%;
+  background: radial-gradient(circle at 0 0, transparent 19.5px, #fff 20px);
+}
+
+.testimonio-tab::after {
+  left: 100%;
+  background: radial-gradient(circle at 100% 0, transparent 19.5px, #fff 20px);
+}
+
+/* Cuerpo de artículo público (fondo claro) */
+.article-body {
+  color: #44403c;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.article-body h1,
+.article-body h2,
+.article-body h3 {
+  color: #0a0a0a;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 2rem 0 0.75rem;
+}
+
+.article-body h1 {
+  font-size: 1.875rem;
+}
+
+.article-body h2 {
+  font-size: 1.5rem;
+}
+
+.article-body p {
+  margin-bottom: 1.2rem;
+}
+
+.article-body strong {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.article-body a {
+  color: #c2410c;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-body ul {
+  list-style: none;
+  margin: 1.2rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-body ul li {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.article-body ul li::before {
+  content: "—";
+  position: absolute;
+  left: -1.5rem;
+  color: #c2410c;
+}
+
+.article-body ol {
+  list-style: decimal;
+  margin: 1.2rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-body ol li::marker {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+/* Avisos (Sileo): por encima de los modales, que usan z-[9999] */
+html [data-sileo-viewport] {
+  z-index: 10000;
+}
+
 /* Optimización para transiciones más suaves en navegadores móviles */
 * {
   -webkit-font-smoothing: antialiased;

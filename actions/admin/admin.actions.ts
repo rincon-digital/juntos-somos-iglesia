@@ -13,14 +13,19 @@ export async function createAdmin(
   role: Role,
 ) {
   try {
-    //VALIDAR SESION
-    const session = await validateSessionUser(Role.admin);
+    //VALIDAR SESION: solo el superadmin crea usuarios del panel
+    const session = await validateSessionUser(Role.superadmin);
 
     if (!session) {
       return {
         ok: false,
         message: "No tienes permiso para realizar esta acción",
       };
+    }
+
+    // Desde el panel solo se crean cuentas de gestión; los alumnos se registran desde los cursos
+    if (role !== Role.admin && role !== Role.superadmin) {
+      return { ok: false, message: "Rol no permitido." };
     }
 
     //VALIDAR DATOS
