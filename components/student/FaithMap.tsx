@@ -1,17 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Lock,
-  CheckCircle2,
-  Play,
-  AlertTriangle,
-  ChevronRight,
-  Star,
-  Trophy,
-  Clock,
-  ListChecks,
-} from "lucide-react";
+import { Lock, Check, Play, AlertTriangle, Trophy, ListChecks, ArrowRight } from "lucide-react";
 import VideoModal from "./VideoModal";
 import confetti from "canvas-confetti";
 import { clsx, type ClassValue } from "clsx";
@@ -73,270 +63,192 @@ export default function FaithMap({ roadmap, onRefresh, courseName }: any) {
     }
   }, [isCourseFinished, courseName, hasFiredConfetti]);
 
+  const lessonStatus = (lesson: any) => {
+    const isStuck =
+      lesson.isOptimisticallyStuck ||
+      lesson.videoReview?.some((rev: any) => {
+        const hasPassed = rev.examAnswers?.some((ans: any) => ans.response === rev.correctOption);
+        return rev.examAnswers?.length >= 2 && !hasPassed;
+      });
+    return lesson.isCompleted ? "completed" : lesson.isLocked ? "locked" : isStuck ? "stuck" : "active";
+  };
+
+  const total = localRoadmap.length;
+  const done = localRoadmap.filter((l: any) => l.isCompleted).length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white selection:bg-[#FF6B00] pb-32">
-      <header className="max-w-6xl mx-auto pt-24 pb-20 px-6">
-        <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-4"
-        >
-          <div className="flex items-center gap-4">
-            <span className="h-[2px] w-12 bg-[#FF6B00]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.6em] text-[#FF6B00]">
-              Tu Ruta de Crecimiento
+    <div className="mx-auto w-full max-w-3xl px-4 pb-20 text-[#0a0a0a] md:px-6">
+      {/* ENCABEZADO DEL CURSO */}
+      <header className="pt-6 md:pt-8">
+        <p className="text-sm text-[#57534e]">Curso</p>
+        <h1 className="text-3xl font-semibold capitalize leading-tight tracking-[-0.03em] text-balance md:text-4xl">
+          {(courseName || "Curso").toLowerCase()}
+        </h1>
+        <div className="mt-5 rounded-2xl border border-[#e7e5e4] bg-white p-4">
+          <div className="flex items-baseline justify-between gap-4 text-sm">
+            <span className="text-[#57534e]">
+              <span className="font-semibold tabular-nums text-[#0a0a0a]">{done}</span> de{" "}
+              <span className="tabular-nums">{total}</span> {total === 1 ? "clase completada" : "clases completadas"}
             </span>
+            <span className="font-semibold tabular-nums text-[#C2410C]">{percent}%</span>
           </div>
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black uppercase italic tracking-tighter leading-[0.85]">
-            {courseName || "CURSO"}
-            <span className="text-[#FF6B00]">.</span>
-          </h1>
-        </motion.div>
+          <div
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Avance del curso"
+            className="mt-2.5 h-2 overflow-hidden rounded-full bg-[#f5f5f4]"
+          >
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${percent}%` }}
+              transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+              className="h-full rounded-full bg-[#FF6B00]"
+            />
+          </div>
+        </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 relative">
-        {/* LÍNEA DE PROGRESO ALINEADA A LA IZQUIERDA */}
-        <div className="absolute left-10 md:left-16 top-0 bottom-0 w-1 bg-gradient-to-b from-[#FF6B00] via-white/5 to-transparent rounded-full opacity-50 shadow-[0_0_20px_#FF6B00]" />
+      {/* CLASES */}
+      <ol className="mt-8">
+        {localRoadmap.map((lesson: any, index: number) => {
+          const status = lessonStatus(lesson);
+          const isLast = index === localRoadmap.length - 1;
+          const questions = lesson.videoReview?.length || 0;
+          const canOpen = status === "active";
 
-        <div className="flex flex-col gap-12 relative z-10">
-          {localRoadmap.map((lesson: any, index: number) => {
-            // ✅ CAMBIO ACÁ: Agregamos lesson.isOptimisticallyStuck para que se bloquee al instante
-            const isStuck =
-              lesson.isOptimisticallyStuck ||
-              lesson.videoReview?.some((rev: any) => {
-                const hasPassed = rev.examAnswers?.some(
-                  (ans: any) => ans.response === rev.correctOption,
-                );
-                return rev.examAnswers?.length >= 2 && !hasPassed;
-              });
-
-            const status = lesson.isCompleted
-              ? "completed"
-              : lesson.isLocked
-                ? "locked"
-                : isStuck
-                  ? "stuck"
-                  : "active";
-
-            const progress =
-              status === "completed" ? 100 : status === "stuck" ? 50 : 0;
-
-            return (
-              <motion.div
-                key={lesson.id}
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                className="relative flex items-center w-full"
-              >
-                <div
-                  className={cn(
-                    "absolute left-4 md:left-10 w-6 h-6 rounded-full border-[5px] border-[#050505] z-20 flex items-center justify-center transition-all duration-500",
-                    status === "completed"
-                      ? "bg-green-500 shadow-[0_0_20px_#22c55e] scale-110"
-                      : status === "stuck"
-                        ? "bg-red-500 shadow-[0_0_20px_#ef4444] scale-110"
-                        : status === "active"
-                          ? "bg-[#FF6B00] shadow-[0_0_20px_#FF6B00] animate-pulse scale-125"
-                          : "bg-white/10",
-                  )}
-                />
-
-                <div className="pl-16 md:pl-28 w-full">
-                  <div
-                    className={cn(
-                      "group flex flex-col md:flex-row bg-gradient-to-br from-white/[0.04] to-[#050505] rounded-[2.5rem] border backdrop-blur-xl transition-all duration-500 overflow-hidden",
-                      status === "active"
-                        ? "border-[#FF6B00]/40 shadow-[0_20px_40px_-15px_rgba(255,107,0,0.2)] hover:-translate-y-1"
-                        : status === "completed"
-                          ? "border-green-500/20 shadow-[0_10px_30px_-15px_rgba(34,197,94,0.1)] hover:-translate-y-1"
-                          : status === "stuck"
-                            ? "border-red-500/40 bg-red-500/[0.02]"
-                            : "border-white/5 opacity-50 grayscale hover:grayscale-0",
-                    )}
-                  >
-                    <div className="hidden md:flex w-24 bg-white/[0.02] border-r border-white/5 items-center justify-center relative overflow-hidden flex-shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-b from-[#FF6B00]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <span className="-rotate-90 whitespace-nowrap text-3xl font-black uppercase tracking-[0.2em] text-white/20 group-hover:text-[#FF6B00] transition-colors duration-500">
-                        Clase 0{index + 1}
-                      </span>
-                    </div>
-
-                    <div className="md:hidden bg-white/[0.02] border-b border-white/5 p-4 text-center">
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#FF6B00]">
-                        Clase 0{index + 1}
-                      </span>
-                    </div>
-
-                    <div className="flex-1 flex flex-col lg:flex-row p-6 md:p-8 gap-8 relative">
-                      <div className="relative w-full lg:w-72 aspect-video rounded-[1.5rem] overflow-hidden border border-white/10 flex-shrink-0 group-hover:border-[#FF6B00]/30 transition-all duration-500 shadow-xl">
-                        <img
-                          src={`https://img.youtube.com/vi/${lesson.videoId?.trim()}/hqdefault.jpg`}
-                          className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-80 transition-all duration-700"
-                          alt="Video Thumbnail"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          {status === "completed" ? (
-                            <div className="w-12 h-12 rounded-full bg-green-500/20 backdrop-blur-md flex items-center justify-center">
-                              <CheckCircle2
-                                className="text-green-500"
-                                size={24}
-                              />
-                            </div>
-                          ) : status === "stuck" ? (
-                            <div className="w-12 h-12 rounded-full bg-red-500/20 backdrop-blur-md flex items-center justify-center">
-                              <AlertTriangle
-                                className="text-red-500"
-                                size={24}
-                              />
-                            </div>
-                          ) : status === "active" ? (
-                            <button
-                              onClick={() => setSelectedLesson(lesson)}
-                              className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:bg-[#FF6B00] hover:text-white hover:scale-110 transition-all"
-                            >
-                              <Play
-                                fill="currentColor"
-                                size={24}
-                                className="ml-1"
-                              />
-                            </button>
-                          ) : (
-                            <Lock size={24} className="text-white/30" />
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <h3 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter leading-[1.1] mb-4 text-white">
-                            {lesson.title}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-white/40 mb-6">
-                            <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                              <Clock size={12} className="text-[#FF6B00]" /> ~15
-                              MIN
-                            </span>
-                            <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                              <ListChecks
-                                size={12}
-                                className="text-[#FF6B00]"
-                              />{" "}
-                              {lesson.videoReview?.length || 0} Preguntas
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mt-auto">
-                          <div className="flex-1 max-w-sm">
-                            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2 text-white/50">
-                              <span>Progreso del Módulo</span>
-                              <span
-                                className={
-                                  status === "completed"
-                                    ? "text-green-500"
-                                    : status === "stuck"
-                                      ? "text-red-500"
-                                      : "text-[#FF6B00]"
-                                }
-                              >
-                                {progress}%
-                              </span>
-                            </div>
-                            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                              <div
-                                className={cn(
-                                  "h-full transition-all duration-1000",
-                                  status === "completed"
-                                    ? "bg-green-500 shadow-[0_0_10px_#22c55e]"
-                                    : status === "stuck"
-                                      ? "bg-red-500"
-                                      : "bg-[#FF6B00]",
-                                )}
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex-shrink-0">
-                            {status === "active" && (
-                              <button
-                                onClick={() => setSelectedLesson(lesson)}
-                                className="px-6 py-3 bg-white text-black rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#FF6B00] hover:text-white transition-all flex items-center gap-2"
-                              >
-                                Comenzar <ChevronRight size={14} />
-                              </button>
-                            )}
-                            {status === "stuck" && (
-                              // ✅ CAMBIO ACÁ: Texto más profesional para el alumno
-                              <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl font-bold uppercase text-[9px] tracking-widest flex items-center gap-2">
-                                <AlertTriangle size={12} /> En revisión por el
-                                Pastor
-                              </div>
-                            )}
-                            {status === "completed" && (
-                              <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl font-bold uppercase text-[9px] tracking-widest">
-                                <Star size={12} className="fill-green-500" />{" "}
-                                Etapa Superada
-                              </div>
-                            )}
-                            {status === "locked" && (
-                              <div className="px-4 py-2 bg-white/5 text-white/30 rounded-xl font-bold uppercase text-[9px] tracking-widest">
-                                No Disponible
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="flex justify-center mt-10 w-full relative z-20 pl-16 md:pl-28"
-          >
-            <div
-              className={cn(
-                "relative overflow-hidden p-10 md:p-14 rounded-[3rem] border backdrop-blur-xl text-center w-full transition-all duration-1000",
-                isCourseFinished
-                  ? "bg-gradient-to-br from-[#FF6B00]/20 to-black border-[#FF6B00]/50 shadow-[0_0_50px_rgba(255,107,0,0.3)]"
-                  : "bg-white/[0.02] border-white/5 grayscale opacity-50",
-              )}
+          return (
+            <motion.li
+              key={lesson.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: index * 0.05, ease: [0.23, 1, 0.32, 1] }}
+              className="relative flex gap-4 pb-4"
             >
-              <div className="flex justify-center mb-6">
-                <div
+              {/* Paso: círculo + línea que lo une con el siguiente */}
+              <div className="flex flex-col items-center">
+                <span
                   className={cn(
-                    "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-1000",
-                    isCourseFinished
-                      ? "bg-[#FF6B00] shadow-[0_0_30px_#FF6B00] scale-110"
-                      : "bg-white/5",
+                    "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                    status === "completed" && "bg-green-600 text-white",
+                    status === "active" && "bg-[#FF6B00] text-white ring-4 ring-[#FF6B00]/15",
+                    status === "stuck" && "bg-amber-500 text-white",
+                    status === "locked" && "border border-[#e7e5e4] bg-white text-[#a8a29e]",
                   )}
                 >
-                  <Trophy
-                    size={40}
-                    className={
-                      isCourseFinished ? "text-black" : "text-white/20"
-                    }
+                  {status === "completed" ? <Check size={16} strokeWidth={3} aria-hidden="true" /> : index + 1}
+                </span>
+                {!isLast && (
+                  <span
+                    aria-hidden="true"
+                    className={cn("mt-1 w-0.5 flex-1 rounded-full", status === "completed" ? "bg-green-600/40" : "bg-[#e7e5e4]")}
                   />
+                )}
+              </div>
+
+              {/* Tarjeta de la clase */}
+              <div
+                className={cn(
+                  "mb-2 flex flex-1 flex-col gap-4 rounded-[1.5rem] border bg-white p-3 sm:flex-row sm:items-center",
+                  status === "active" ? "border-[#FF6B00]/40 shadow-[0_8px_24px_rgba(255,107,0,0.08)]" : "border-[#e7e5e4]",
+                  status === "locked" && "bg-[#fafaf9]",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => canOpen && setSelectedLesson(lesson)}
+                  disabled={!canOpen}
+                  aria-label={canOpen ? `Ver la clase ${lesson.title}` : undefined}
+                  tabIndex={canOpen ? 0 : -1}
+                  className="group relative aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] disabled:cursor-default sm:w-40"
+                >
+                  <img
+                    src={`https://img.youtube.com/vi/${lesson.videoId?.trim()}/mqdefault.jpg`}
+                    alt=""
+                    className={cn(
+                      "h-full w-full object-cover transition-transform duration-500",
+                      canOpen && "group-hover:scale-105",
+                      status === "locked" && "opacity-40 grayscale",
+                    )}
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    {status === "locked" ? (
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#57534e]">
+                        <Lock size={15} aria-hidden="true" />
+                      </span>
+                    ) : canOpen ? (
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0a0a0a] shadow-[0_6px_16px_rgba(0,0,0,0.2)] transition-transform duration-200 group-hover:scale-105">
+                        <Play size={17} className="ml-0.5 fill-current" aria-hidden="true" />
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+
+                <div className="min-w-0 flex-1 px-1 sm:px-0">
+                  <p className="text-xs text-[#57534e]">Clase {index + 1}</p>
+                  <h3 className={cn("line-clamp-2 font-semibold leading-snug", status === "locked" && "text-[#a8a29e]")}>
+                    {lesson.title}
+                  </h3>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-[#57534e]">
+                    <ListChecks size={14} aria-hidden="true" />
+                    {questions} {questions === 1 ? "pregunta" : "preguntas"}
+                  </p>
+                </div>
+
+                <div className="shrink-0 px-1 pb-1 sm:px-0 sm:pb-0 sm:pr-2">
+                  {status === "active" && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLesson(lesson)}
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 sm:w-auto"
+                    >
+                      Empezar <ArrowRight size={15} aria-hidden="true" />
+                    </button>
+                  )}
+                  {status === "completed" && (
+                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#ecfdf5] px-3 text-sm font-medium text-green-700">
+                      <Check size={14} strokeWidth={3} aria-hidden="true" /> Completada
+                    </span>
+                  )}
+                  {status === "stuck" && (
+                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#fffbeb] px-3 text-sm font-medium text-amber-800">
+                      <AlertTriangle size={14} aria-hidden="true" /> En revisión del pastor
+                    </span>
+                  )}
+                  {status === "locked" && (
+                    <span className="text-sm text-[#a8a29e]">Se habilita al terminar la anterior</span>
+                  )}
                 </div>
               </div>
-              <h3 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter mb-2">
-                {isCourseFinished ? "¡Curso Completado!" : "Meta Final"}
-              </h3>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                {isCourseFinished
-                  ? "Has finalizado exitosamente toda la ruta de crecimiento."
-                  : "Completa todas las etapas para desbloquear este logro."}
-              </p>
-            </div>
-          </motion.div>
+            </motion.li>
+          );
+        })}
+      </ol>
+
+      {/* CIERRE DEL CURSO */}
+      <div
+        className={cn(
+          "mt-4 flex items-center gap-4 rounded-[1.5rem] p-5",
+          isCourseFinished ? "bg-[#FF6B00] text-black" : "border border-dashed border-[#d6d3d1] text-[#57534e]",
+        )}
+      >
+        <span
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+            isCourseFinished ? "bg-black/10" : "bg-[#f5f5f4]",
+          )}
+        >
+          <Trophy size={20} aria-hidden="true" />
+        </span>
+        <div>
+          <p className={cn("font-semibold", isCourseFinished ? "text-black" : "text-[#0a0a0a]")}>
+            {isCourseFinished ? "¡Curso completado!" : "Meta final"}
+          </p>
+          <p className={cn("text-sm", isCourseFinished && "text-black/70")}>
+            {isCourseFinished ? "Terminaste todas las clases. ¡Felicitaciones!" : "Terminá todas las clases para completar el curso."}
+          </p>
         </div>
       </div>
 

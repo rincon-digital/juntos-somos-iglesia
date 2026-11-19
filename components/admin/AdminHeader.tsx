@@ -21,10 +21,18 @@ const navItems = [
 const itemBase =
   "group relative flex h-11 w-11 items-center justify-center rounded-full outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a]";
 
-// Etiqueta que aparece al pasar el mouse (solo escritorio)
+// Globito con el nombre que aparece al pasar el mouse (solo escritorio)
 function HoverLabel({ text }: { text: string }) {
   return (
-    <span className="pointer-events-none absolute left-full top-1/2 ml-4 hidden -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-full bg-[#0a0a0a] px-3 py-1.5 text-sm font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-[opacity,transform] duration-200 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 lg:block">
+    <span
+      role="tooltip"
+      className="pointer-events-none absolute left-full top-1/2 z-10 ml-5 hidden -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-xl bg-[#0a0a0a] px-3.5 py-2 text-sm font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-[opacity,transform] duration-150 ease-out group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-75 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 lg:block"
+    >
+      {/* Flechita que apunta al ícono */}
+      <span
+        aria-hidden="true"
+        className="absolute right-full top-1/2 -translate-y-1/2 border-y-[6px] border-r-[7px] border-y-transparent border-r-[#0a0a0a]"
+      />
       {text}
     </span>
   );
@@ -55,7 +63,7 @@ export default function AdminHeader() {
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-      className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-fit items-center gap-1 rounded-full bg-[#0a0a0a] p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.25)] font-[family-name:var(--font-poppins)] lg:inset-x-auto lg:bottom-auto lg:left-5 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:gap-1.5 lg:p-2"
+      className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-fit items-center gap-1 rounded-full bg-[#0a0a0a] p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.25)] font-[family-name:var(--font-poppins)] lg:inset-x-auto lg:bottom-auto lg:left-8 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:gap-1.5 lg:p-2"
     >
       <Link
         href="/"

@@ -37,7 +37,7 @@ export default function ClientLayout({
   if (!user) return <div className={`${shell} min-h-screen`} />;
 
   return (
-    <main className={`${shell} min-h-screen p-4 pb-28 md:p-7 md:pb-28 lg:pb-7 lg:pl-28`}>
+    <main className={`${shell} min-h-screen p-4 pb-28 md:p-7 md:pb-28 lg:pb-7 lg:pl-32`}>
       <Toaster position="bottom-right" richColors theme="dark" />
 
       {/* Cápsula de navegación */}

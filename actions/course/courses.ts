@@ -10,7 +10,7 @@ import {
 import generateAccessCode from "@/lib/utils/generatorsCode";
 import { getCurrentUser } from "../auth/auth";
 import { validationCollaboratorCourse } from "@/lib/helpers/course/validationAccessCourse";
-import { validationDataCourse } from "@/lib/helpers/course/validationCourse";
+import { validationDataCourse, churchDayStart, churchDayEnd } from "@/lib/helpers/course/validationCourse";
 import { revalidatePath } from "next/cache";
 
 export async function updateCourse(data: UpdateCourse) {
@@ -41,10 +41,10 @@ export async function updateCourse(data: UpdateCourse) {
           ? Number(updateData.quotaLimit)
           : undefined,
         openEnrollment: (updateData as any).openEnrollment
-          ? new Date((updateData as any).openEnrollment)
+          ? churchDayStart((updateData as any).openEnrollment)
           : undefined,
         deadline: updateData.deadline
-          ? new Date(updateData.deadline)
+          ? churchDayEnd(updateData.deadline as any)
           : undefined,
       },
     });
@@ -122,12 +122,25 @@ export async function getInfoCourses(filterAll: boolean = false) {
           orderBy: { order: "asc" },
           include: {
             videoReview: true,
+            // Opiniones de los alumnos (para el pastor)
+            classFeedback: {
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                rating: true,
+                comment: true,
+                createdAt: true,
+                user: { select: { fullName: true } },
+              },
+            },
           },
         },
         courseRegistration: {
+          orderBy: { createdAt: "desc" },
           select: {
             id: true,
             userId: true,
+            createdAt: true,
             user: {
               select: {
                 id: true,
@@ -295,8 +308,8 @@ export async function createCourse(data: CreateCourse) {
         name: data.name,
         description: data.description,
         quotaLimit: Number(data.quotaLimit),
-        openEnrollment: new Date(data.openEnrollment),
-        deadline: new Date(data.deadline),
+        openEnrollment: churchDayStart(data.openEnrollment as any),
+        deadline: churchDayEnd(data.deadline as any),
         accessCode: accessCode,
         managers: {
           create: { roleInCourse: RoleInCourse.owner, userId: session.id },

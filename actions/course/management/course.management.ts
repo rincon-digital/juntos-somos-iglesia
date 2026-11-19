@@ -110,46 +110,6 @@ export async function removeContributor(courseId: string, userId: string) {
   }
 }
 
-export async function searchPotentialCollaborators(
-  courseId: string,
-  query: string,
-) {
-  try {
-    const session = await validateSessionUser(Role.admin);
-    if (!session) return { error: "No autorizado" };
-
-    if (!query || query.length < 3) return [];
-
-    const users = await prisma.user.findMany({
-      where: {
-        OR: [
-          { fullName: { contains: query } },
-          { username: { contains: query } },
-        ],
-        managedCourses: {
-          none: {
-            courseId: courseId,
-          },
-        },
-        // Opcionalmente podrías filtrar por rol si solo quieres admins
-        // role: { in: [Role.admin, Role.superadmin] }
-      },
-      select: {
-        id: true,
-        fullName: true,
-        username: true,
-        role: true,
-      },
-      take: 5,
-    });
-
-    return users;
-  } catch (error) {
-    console.error(error);
-    return { error: "Error al buscar usuarios" };
-  }
-}
-
 export async function getAvailableUsers(courseId: string) {
   try {
     const session = await validateSessionUser(Role.admin);
@@ -176,60 +136,5 @@ export async function getAvailableUsers(courseId: string) {
   } catch (error) {
     console.error(error);
     return { error: "Error al obtener usuarios disponibles" };
-  }
-}
-
-export async function getCoursesManagement() {
-  // 1. Validamos la sesión.
-  // Nota: validateSessionUser ya permite que Superadmin pase aunque pidamos Role.admin
-  const session = await validateSessionUser(Role.admin);
-
-  if (!session || !session.userId) {
-    return { error: "Acceso no autorizado o sesión expirada." };
-  }
-
-  try {
-    // 2. Consulta con filtro estricto por userId
-    const courses = await prisma.course.findMany({
-      where: {
-        managers: {
-          some: {
-            userId: session.userId, // Filtramos SÍ O SÍ por el ID del usuario logueado
-          },
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        openEnrollment: true,
-        quotaLimit: true,
-        deadline: true,
-        accessCode: true,
-        createdAt: true,
-        _count: {
-          select: { courseRegistration: true },
-        },
-        managers: {
-          select: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                username: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc", // Opcional: mostrar los más nuevos primero
-      },
-    });
-
-    return courses;
-  } catch (error) {
-    console.error("Error en getCoursesManagement:", error);
-    return { error: "Ocurrió un error al obtener tus cursos." };
   }
 }

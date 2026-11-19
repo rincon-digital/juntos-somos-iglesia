@@ -25,6 +25,14 @@ export async function registerCourse(data: userRegister) {
     });
 
     if (!course) return { error: "Curso no encontrado" };
+    // La inscripción solo vale entre la apertura y el cierre
+    const now = Date.now();
+    if (course.openEnrollment && course.openEnrollment.getTime() > now) {
+      return { error: "La inscripción a este curso todavía no abrió." };
+    }
+    if (course.deadline.getTime() < now) {
+      return { error: "La inscripción a este curso ya cerró." };
+    }
     if (course.quotaLimit > 0 && course._count.courseRegistration >= course.quotaLimit) {
       return { error: "Lo sentimos, el cupo para este curso está lleno." };
     }
@@ -216,6 +224,7 @@ export async function getAvailableCoursesForStudent() {
         id: true,
         name: true,
         description: true,
+        openEnrollment: true,
         deadline: true,
         _count: { select: { courseRegistration: true } },
         quotaLimit: true
@@ -240,6 +249,14 @@ export async function quickEnrollCourse(courseId: string, code: string) {
     });
 
     if (!course) return { error: "Curso no encontrado" };
+    // La inscripción solo vale entre la apertura y el cierre
+    const now = Date.now();
+    if (course.openEnrollment && course.openEnrollment.getTime() > now) {
+      return { error: "La inscripción a este curso todavía no abrió." };
+    }
+    if (course.deadline.getTime() < now) {
+      return { error: "La inscripción a este curso ya cerró." };
+    }
     
     console.log("QUICK ENROLL CHECK:", {
       providedCode: code,

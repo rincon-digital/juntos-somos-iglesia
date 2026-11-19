@@ -27,6 +27,7 @@ model User {
   courseRegistration CourseRegistration[]
   examAnswers        ExamAnswers[]
   videoProgress      UserVideoProgress[] 
+  classFeedback      ClassFeedback[]
   
   // Relaciones de autoría
   articles           Article[]
@@ -107,6 +108,7 @@ model CourseVideo {
   course        Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
   videoReview   VideoReview[]
   videoProgress UserVideoProgress[]
+  classFeedback ClassFeedback[]
 
   @@unique([courseId, order]) 
 }
@@ -145,6 +147,8 @@ model UserVideoProgress {
   userId      String
   videoId     String
   isCompleted Boolean  @default(false) 
+  // Segundo del video donde quedó el alumno (para retomar desde ahí)
+  lastPosition Int     @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -152,6 +156,22 @@ model UserVideoProgress {
   video CourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@unique([userId, videoId]) 
+}
+
+// Opinión del alumno al aprobar una clase: "like" | "regular" | "dislike"
+model ClassFeedback {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  rating    String
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video CourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
 }
 
 enum QuestionOption {

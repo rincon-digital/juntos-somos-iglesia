@@ -88,35 +88,6 @@ export async function getArticles(limit?: number) {
   }
 }
 
-//OBTENER ARTICULO POR ID
-export async function getArticleById(id: string) {
-  try {
-    const article = await prisma.article.findUnique({
-      where: { id },
-    });
-    return article;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
-}
-
-// OBTENER ARTICULO POR SLUG
-export async function getArticleBySlug(slug: string) {
-  try {
-    const article = await prisma.article.findUnique({
-      where: { slug },
-      include: {
-        author: { select: { fullName: true } },
-      },
-    });
-    return article;
-  } catch (err) {
-    console.error(err);
-    return null;
-  }
-}
-
 // EDITAR ARTICULO (Solo dueño o Admin)
 export async function updateArticle(
   articleId: string,

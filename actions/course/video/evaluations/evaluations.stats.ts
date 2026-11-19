@@ -1,100 +1,63 @@
 "use server";
 import prisma from "@/lib/prisma";
+import { validateSessionUser } from "@/actions/user";
+import { Role } from "@/lib/types/definitions";
 
-// ESTADISTICAS DE EVALUACIONES ERRONEAS
+// Por clase: cuántos alumnos la aprobaron y cuántos quedaron trabados
+// (trabado = 2 intentos activos fallidos en una pregunta, la misma regla que bloquea al alumno)
 export async function getVideoErrorStats(courseId: string) {
   try {
-    const videos = await prisma.courseVideo.findMany({
-      where: { courseId },
-      orderBy: { order: "asc" },
-      include: {
-        videoReview: {
-          include: {
-            examAnswers: true, // Traemos todas las respuestas de los alumnos
-          },
-        },
-      },
-    });
+    const session = await validateSessionUser(Role.admin);
+    if (!session || !courseId) return [];
 
-    const errorData = videos.map((video) => {
-      let totalAnswers = 0;
-      let incorrectAnswers = 0;
-
-      video.videoReview.forEach((review) => {
-        review.examAnswers.forEach((answer) => {
-          totalAnswers++;
-          if (answer.response !== review.correctOption) {
-            incorrectAnswers++;
-          }
-        });
-      });
-
-      return {
-        clase: `Clase ${video.order}`,
-        titulo: video.title,
-        erróneas: incorrectAnswers,
-        totales: totalAnswers,
-        tasaError:
-          totalAnswers > 0
-            ? Math.round((incorrectAnswers / totalAnswers) * 100)
-            : 0,
-      };
-    });
-
-    return errorData;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
-// ESTADISTICAS DE DISTRIBUCION DE ALUMNOS
-export async function getStudentDistribution(courseId: string) {
-  try {
-    const totalVideos = await prisma.courseVideo.count({ where: { courseId } });
-
-    const students = await prisma.courseRegistration.findMany({
-      where: { courseId },
-      include: {
-        user: {
-          include: {
-            _count: {
-              select: {
-                videoProgress: {
-                  where: { isCompleted: true, video: { courseId } },
-                },
+    const [videos, enrolled] = await Promise.all([
+      prisma.courseVideo.findMany({
+        where: { courseId },
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          title: true,
+          order: true,
+          videoProgress: { where: { isCompleted: true }, select: { userId: true } },
+          videoReview: {
+            select: {
+              examAnswers: {
+                where: { isArchived: false },
+                select: { userId: true, isCorrect: true },
               },
             },
           },
         },
-      },
+      }),
+      prisma.courseRegistration.count({ where: { courseId } }),
+    ]);
+
+    return videos.map((video) => {
+      const approved = new Set(video.videoProgress.map((p) => p.userId));
+      const stuck = new Set<string>();
+
+      for (const review of video.videoReview) {
+        const byUser = new Map<string, { tries: number; correct: boolean }>();
+        for (const a of review.examAnswers) {
+          const u = byUser.get(a.userId) || { tries: 0, correct: false };
+          u.tries++;
+          u.correct ||= a.isCorrect;
+          byUser.set(a.userId, u);
+        }
+        byUser.forEach((u, userId) => {
+          if (u.tries >= 2 && !u.correct && !approved.has(userId)) stuck.add(userId);
+        });
+      }
+
+      return {
+        videoId: video.id,
+        clase: `Clase ${video.order}`,
+        titulo: video.title,
+        aprobados: approved.size,
+        trabados: stuck.size,
+        inscriptos: enrolled,
+      };
     });
-
-    // 3. Inicializar rangos
-    const ranges = {
-      "0-20%": 0,
-      "21-40%": 0,
-      "41-60%": 0,
-      "61-80%": 0,
-      "81-100%": 0,
-    };
-
-    students.forEach((reg) => {
-      const completed = reg.user._count.videoProgress;
-      const progress = totalVideos > 0 ? (completed / totalVideos) * 100 : 0;
-
-      if (progress <= 20) ranges["0-20%"]++;
-      else if (progress <= 40) ranges["21-40%"]++;
-      else if (progress <= 60) ranges["41-60%"]++;
-      else if (progress <= 80) ranges["61-80%"]++;
-      else ranges["81-100%"]++;
-    });
-
-    // Formatea para el gráfico
-    return Object.entries(ranges).map(([name, value]) => ({
-      rango: name,
-      alumnos: value,
-    }));
   } catch (error) {
     console.error(error);
     return [];

@@ -14,12 +14,23 @@ type ToastOptions = {
 
 type Kind = "success" | "error" | "warning" | "info";
 
+// Títulos cortos para cuando el mensaje no entra en la píldora
+const SHORT_TITLE: Record<Kind, string> = {
+  success: "Listo",
+  error: "No se pudo completar",
+  warning: "Atención",
+  info: "Aviso",
+};
+
 function show(kind: Kind, message: ReactNode, options?: ToastOptions) {
   if (options?.id) sileo.dismiss(options.id);
+  const text = String(message);
+  // Un mensaje largo va como descripción, debajo de un título corto
+  const isLong = text.length > 34 && !options?.description;
   return sileo[kind]({
-    title: String(message),
-    description: options?.description,
-    duration: options?.duration,
+    title: isLong ? SHORT_TITLE[kind] : text,
+    description: isLong ? text : options?.description,
+    duration: options?.duration ?? (isLong ? 6000 : undefined),
   });
 }
 
@@ -48,6 +59,17 @@ export function Toaster(_props: Record<string, unknown>) {
   return null;
 }
 
+// Sileo pone Cada Palabra En Mayúscula en el título: respetamos cómo está escrito el mensaje
+const SILEO_FIXES = `
+html [data-sileo-title] { text-transform: none; }
+html [data-sileo-description] { line-height: 1.4; }
+`;
+
 export function AppToaster() {
-  return <SileoToaster position="top-right" theme="light" />;
+  return (
+    <>
+      <style>{SILEO_FIXES}</style>
+      <SileoToaster position="top-right" theme="light" />
+    </>
+  );
 }

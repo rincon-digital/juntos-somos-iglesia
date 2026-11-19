@@ -4,23 +4,6 @@ import prisma from "@/lib/prisma";
 import { Role, Rank } from "@/lib/types/definitions";
 import { getCurrentUser } from "../auth/auth";
 
-export async function getDashboardStats() {
-  const [totalUsers, totalCourses, totalArticles, totalTestimonies] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.course.count(),
-      prisma.article.count(),
-      prisma.testimony.count(),
-    ]);
-
-  return {
-    totalUsers,
-    totalCourses,
-    totalArticles,
-    totalTestimonies,
-  };
-}
-
 const MONTHS_BACK = 6;
 
 // Métricas del panel: series mensuales, KPIs del mes y actividad reciente
@@ -320,24 +303,6 @@ export async function deleteAdmin(adminId: string) {
   return { success: true };
 }
 
-export async function getCourseCollaborators(courseId: string) {
-  const managers = await prisma.courseManager.findMany({
-    where: { courseId },
-    include: {
-      user: {
-        select: { id: true, fullName: true, username: true },
-      },
-    },
-  });
-
-  return managers.map((m) => ({
-    id: m.user.id,
-    fullName: m.user.fullName,
-    username: m.user.username,
-    roleInCourse: m.roleInCourse,
-  }));
-}
-
 export async function deleteCourse(courseId: string) {
   const session = await getCurrentUser();
   if (
@@ -349,4 +314,68 @@ export async function deleteCourse(courseId: string) {
 
   await prisma.course.delete({ where: { id: courseId } });
   return { success: true };
+}
+
+// "Para revisar": alumnos trabados (2 intentos activos fallidos en una pregunta),
+// agrupados por curso y clase. El superadmin ve todos los cursos; el admin, los suyos.
+export async function getStuckStudents() {
+  const session = await getCurrentUser();
+  if (!session || (session.role !== Role.admin && session.role !== Role.superadmin)) return [];
+
+  const videos = await prisma.courseVideo.findMany({
+    where:
+      session.role === Role.superadmin
+        ? {}
+        : { course: { managers: { some: { userId: session.id } } } },
+    orderBy: [{ courseId: "asc" }, { order: "asc" }],
+    select: {
+      id: true,
+      title: true,
+      order: true,
+      course: { select: { id: true, name: true } },
+      videoProgress: { where: { isCompleted: true }, select: { userId: true } },
+      videoReview: {
+        select: {
+          examAnswers: {
+            where: { isArchived: false },
+            select: { userId: true, isCorrect: true, createdAt: true, user: { select: { fullName: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  const groups = [];
+  for (const v of videos) {
+    const approved = new Set(v.videoProgress.map((p) => p.userId));
+    const stuck = new Map<string, { name: string; since: Date }>();
+    for (const r of v.videoReview) {
+      const byUser = new Map<string, { tries: number; correct: boolean; name: string; last: Date }>();
+      for (const a of r.examAnswers) {
+        const u = byUser.get(a.userId) || { tries: 0, correct: false, name: a.user?.fullName || "Alumno", last: a.createdAt };
+        u.tries++;
+        u.correct ||= a.isCorrect;
+        if (a.createdAt > u.last) u.last = a.createdAt;
+        byUser.set(a.userId, u);
+      }
+      byUser.forEach((u, userId) => {
+        if (u.tries >= 2 && !u.correct && !approved.has(userId)) stuck.set(userId, { name: u.name, since: u.last });
+      });
+    }
+    if (stuck.size > 0) {
+      const students = [...stuck.values()].sort((a, b) => b.since.getTime() - a.since.getTime());
+      groups.push({
+        courseId: v.course.id,
+        courseName: v.course.name,
+        videoId: v.id,
+        order: v.order,
+        title: v.title,
+        count: students.length,
+        names: students.map((s) => s.name),
+        lastAt: students[0].since.toISOString(),
+      });
+    }
+  }
+  // Lo más reciente primero
+  return groups.sort((a, b) => b.lastAt.localeCompare(a.lastAt));
 }

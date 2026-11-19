@@ -162,12 +162,12 @@ export default function StudentRegisterForm({ courseId, onSuccess }: Props) {
     try {
       const res = await registerCourse(data as any);
 
-      if (res && !res.error) {
+      if (res && !("error" in res)) {
         toast.success("¡Bienvenido! Entrando al sistema...");
         router.push("/dashboard-estudiante");
         onSuccess();
       } else {
-        toast.error(res?.error || "Error al procesar el registro");
+        toast.error((res && "error" in res && res.error) || "Error al procesar el registro");
         setLoading(false);
       }
     } catch (error) {

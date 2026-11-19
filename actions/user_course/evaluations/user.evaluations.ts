@@ -122,29 +122,3 @@ export async function resetStudentAttempts(userId: string, videoId: string) {
     return { error: "No se pudo liberar al alumno" };
   }
 }
-
-// OBTENER HISTORIAL DE EXÁMENES DEL ALUMNO
-export async function getStudentExamHistory(userId: string, courseId: string) {
-  try {
-    const session = await validateSessionUser(Role.admin);
-    if (!session) return { error: "No autorizado" };
-
-    const history = await prisma.examAnswers.findMany({
-      where: {
-        userId: userId,
-        question: { video: { courseId: courseId } },
-      },
-      include: {
-        question: {
-          include: { video: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return history;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}

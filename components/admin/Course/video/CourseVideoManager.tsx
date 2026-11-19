@@ -6,14 +6,15 @@ import {
   Youtube,
   AlertCircle,
   X,
-  Info,
-  Users,
   Play,
   BookOpen,
-  BarChart2,
+  CheckCircle2,
   Pencil,
   Trash2,
   Save,
+  ChevronLeft,
+  MessageSquareText,
+  Smile,
 } from "lucide-react";
 import { getVideoErrorStats } from "@/actions/course/video/evaluations/evaluations.stats";
 import {
@@ -26,6 +27,13 @@ import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import EvaluationForm from "../evaluation/EvaluationForm";
 
+// Caritas de la opinión del alumno (mismas que ve él al aprobar la clase)
+const FEEDBACK = {
+  like: { label: "Me gustó", emoji: "😀", cls: "bg-[#ecfdf5] text-green-800" },
+  regular: { label: "Regular", emoji: "😐", cls: "bg-[#fffbeb] text-amber-800" },
+  dislike: { label: "No me gustó", emoji: "😕", cls: "bg-[#fef2f2] text-red-800" },
+} as const;
+
 export default function CourseVideoManager({ course }: any) {
   const router = useRouter();
   const [videos, setVideos] = useState<any[]>(course.video || []);
@@ -36,6 +44,7 @@ export default function CourseVideoManager({ course }: any) {
   const [editVideoData, setEditVideoData] = useState({ title: "", order: 0 });
   const [modalVideo, setModalVideo] = useState<any | null>(null);
   const [videoToDelete, setVideoToDelete] = useState<any | null>(null);
+  const [feedbackVideo, setFeedbackVideo] = useState<any | null>(null);
 
   const [newVideo, setNewVideo] = useState({
     title: "",
@@ -192,446 +201,438 @@ export default function CourseVideoManager({ course }: any) {
     router.refresh();
   };
 
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      {/* ── CABECERA ── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0f0f0f] border border-white/[0.07] px-6 py-5 rounded-2xl">
-        <div>
-          <h3 className="text-lg font-black uppercase text-white flex items-center gap-2.5 tracking-tight">
-            <Video className="text-[#FF6B00]" size={20} />
-            Clases del curso
-          </h3>
-          <p className="text-[11px] text-white/25 font-medium mt-0.5 flex items-center gap-1.5">
-            <Info size={11} className="text-[#FF6B00]/60" />
-            Añadí clases y configurá evaluaciones desde cada una.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setShowAddForm(!showAddForm);
-            setEditingVideoId(null);
-          }}
-          className={`shrink-0 px-5 py-2.5 rounded-xl font-bold uppercase text-xs tracking-wide transition-all flex items-center gap-2 ${
-            showAddForm
-              ? "bg-white/[0.06] border border-white/[0.08] text-white/60"
-              : "bg-[#FF6B00] text-white hover:bg-orange-500"
-          }`}
-        >
-          {showAddForm ? <X size={15} /> : <Plus size={15} />}
-          {showAddForm ? "Cancelar" : "Nueva clase"}
-        </button>
-      </div>
+  const sortedVideos = [...videos].sort((a, b) => a.order - b.order);
+  const inputClass =
+    "h-11 w-full rounded-xl border border-[#e7e5e4] bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-[border-color,box-shadow] placeholder:text-[#a8a29e] hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30";
+  const backButton =
+    "inline-flex h-10 items-center gap-1.5 rounded-full border border-[#e7e5e4] pl-3 pr-4 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]";
+  const primaryButton =
+    "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2";
 
-      {/* ── FORMULARIO NUEVA CLASE ── */}
-      <AnimatePresence>
-        {showAddForm && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-[#0f0f0f] border border-[#FF6B00]/20 p-6 rounded-2xl space-y-5"
-          >
-            <h4 className="text-sm font-black uppercase tracking-wide text-white">
-              Nueva clase
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                  Título de la lección
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: El poder de la Oración"
-                  value={newVideo.title}
-                  onChange={(e) =>
-                    setNewVideo({ ...newVideo, title: e.target.value })
-                  }
-                  className="w-full bg-white/[0.04] border border-white/[0.08] px-4 py-3 rounded-xl text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF6B00]/40 transition-all"
+  const closeQuestions = () => {
+    setModalVideo(null);
+    setAddingQuestionTo(null);
+  };
+
+  return (
+    <div className="w-full space-y-5 text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
+      {feedbackVideo ? (
+        /* ── OPINIONES DE UNA CLASE (en la misma sección) ── */
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={() => setFeedbackVideo(null)} className={backButton}>
+              <ChevronLeft size={16} aria-hidden="true" /> Volver a las clases
+            </button>
+            <div className="min-w-0">
+              <p className="text-sm text-[#57534e]">Clase {feedbackVideo.order} · Opiniones</p>
+              <h3 className="truncate text-lg font-semibold leading-tight tracking-[-0.01em]">{feedbackVideo.title}</h3>
+            </div>
+          </div>
+
+          {(() => {
+            const list = feedbackVideo.classFeedback || [];
+            const counts = (Object.keys(FEEDBACK) as (keyof typeof FEEDBACK)[]).map((k) => ({
+              key: k,
+              n: list.filter((f: any) => f.rating === k).length,
+            }));
+            return (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  {counts.map(({ key, n }) => (
+                    <div key={key} className="flex items-center gap-3 rounded-2xl border border-[#e7e5e4] bg-white p-4">
+                      <span className="text-3xl" aria-hidden="true">{FEEDBACK[key].emoji}</span>
+                      <div>
+                        <p className="text-2xl font-semibold tabular-nums leading-none">{n}</p>
+                        <p className="mt-1 text-sm text-[#57534e]">{FEEDBACK[key].label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {list.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#e7e5e4] px-6 py-12 text-center">
+                    <p className="font-semibold">Todavía no hay opiniones</p>
+                    <p className="mt-1 text-sm text-[#57534e]">Aparecen cuando los alumnos aprueban esta clase.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-[#f5f5f4] rounded-2xl border border-[#e7e5e4]">
+                    {list.map((f: any) => {
+                      const meta = FEEDBACK[f.rating as keyof typeof FEEDBACK] || FEEDBACK.regular;
+                      return (
+                        <li key={f.id} className="flex gap-3 p-4">
+                          <span className="text-2xl leading-none" aria-label={meta.label}>{meta.emoji}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2">
+                              <p className="font-medium">{f.user?.fullName || "Alumno"}</p>
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${meta.cls}`}>{meta.label}</span>
+                              <time dateTime={f.createdAt} className="text-xs text-[#a8a29e]">
+                                {new Date(f.createdAt).toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                              </time>
+                            </div>
+                            {f.comment ? (
+                              <p className="mt-1 whitespace-pre-wrap text-sm text-[#44403c]">{f.comment}</p>
+                            ) : (
+                              <p className="mt-1 text-sm text-[#a8a29e]">Sin comentario</p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      ) : modalVideo ? (
+        /* ── PREGUNTAS DE UNA CLASE (en la misma sección) ── */
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={closeQuestions} className={backButton}>
+              <ChevronLeft size={16} aria-hidden="true" /> Volver a las clases
+            </button>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#f5f5f4]">
+                <img
+                  src={`https://img.youtube.com/vi/${modalVideo.videoId}/mqdefault.jpg`}
+                  className="h-full w-full object-cover"
+                  alt=""
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
-                  URL de YouTube
-                </label>
+              <div className="min-w-0">
+                <p className="text-sm text-[#57534e]">Clase {modalVideo.order} · Preguntas</p>
+                <h3 className="truncate text-lg font-semibold leading-tight tracking-[-0.01em]">{modalVideo.title}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {(modalVideo.videoReview || []).map((review: any, index: number) => (
+              <div key={review.id || `temp-${index}`} className="overflow-hidden rounded-2xl border border-[#e7e5e4]">
+                <p className="border-b border-[#e7e5e4] bg-[#fafaf9] px-5 py-3 text-sm font-medium">Pregunta {index + 1}</p>
+                <div className="p-5">
+                  <EvaluationForm
+                    videoId={modalVideo.id}
+                    initialData={review}
+                    onSuccess={(data: any) => handleQuestionAdded(modalVideo.id, data)}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {addingQuestionTo === modalVideo.id || !modalVideo.videoReview?.length ? (
+              <div className="overflow-hidden rounded-2xl border border-[#fed7aa]">
+                <div className="flex items-center justify-between border-b border-[#fed7aa] bg-[#fff7ed] px-5 py-3">
+                  <p className="text-sm font-medium text-[#9a3412]">
+                    {modalVideo.videoReview?.length ? "Nueva pregunta" : "Primera pregunta"}
+                  </p>
+                  {modalVideo.videoReview?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setAddingQuestionTo(null)}
+                      className="inline-flex items-center gap-1 text-sm text-[#57534e] transition-colors hover:text-red-700"
+                    >
+                      <X size={14} aria-hidden="true" /> Cancelar
+                    </button>
+                  )}
+                </div>
+                <div className="p-5">
+                  <EvaluationForm
+                    videoId={modalVideo.id}
+                    onSuccess={(data: any) => handleQuestionAdded(modalVideo.id, data)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingQuestionTo(modalVideo.id)}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#d6d3d1] text-sm font-medium text-[#57534e] transition-colors hover:border-[#FF6B00] hover:bg-[#fff7ed] hover:text-[#C2410C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+              >
+                <Plus size={16} aria-hidden="true" /> Agregar otra pregunta
+              </button>
+            )}
+          </div>
+        </div>
+      ) : showAddForm ? (
+        /* ── NUEVA CLASE (en la misma sección) ── */
+        <div className="mx-auto max-w-2xl space-y-5">
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={() => setShowAddForm(false)} className={backButton}>
+              <ChevronLeft size={16} aria-hidden="true" /> Volver a las clases
+            </button>
+            <h3 className="text-lg font-semibold tracking-[-0.01em]">Nueva clase</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="clase-titulo" className="text-sm font-medium text-[#292524]">Título de la clase</label>
+              <input
+                id="clase-titulo"
+                type="text"
+                placeholder="Ej: El poder de la oración"
+                value={newVideo.title}
+                onChange={(e) => setNewVideo({ ...newVideo, title: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="clase-url" className="text-sm font-medium text-[#292524]">Link de YouTube</label>
+              <div className="relative">
+                <Youtube size={16} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-red-600" />
                 <input
-                  type="text"
-                  placeholder="Pegá el link completo aquí"
+                  id="clase-url"
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://www.youtube.com/watch?v=…"
                   value={newVideo.videoUrl}
-                  onChange={(e) =>
-                    setNewVideo({ ...newVideo, videoUrl: e.target.value })
-                  }
-                  className="w-full bg-white/[0.04] border border-white/[0.08] px-4 py-3 rounded-xl text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF6B00]/40 transition-all"
+                  onChange={(e) => setNewVideo({ ...newVideo, videoUrl: e.target.value })}
+                  className={`${inputClass} pl-11`}
                 />
               </div>
             </div>
 
             {newVideo.videoUrl && getYouTubeThumbnail(newVideo.videoUrl) && (
-              <motion.div
+              <motion.img
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex justify-center"
-              >
-                <div className="relative overflow-hidden rounded-xl border border-white/[0.08] w-full max-w-xs">
-                  <img
-                    src={getYouTubeThumbnail(newVideo.videoUrl)!}
-                    className="w-full aspect-video object-cover opacity-60"
-                    alt="Miniatura YouTube"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Youtube className="text-red-500" size={32} />
-                  </div>
-                </div>
-              </motion.div>
+                src={getYouTubeThumbnail(newVideo.videoUrl)!}
+                alt="Vista previa del video"
+                className="aspect-video w-full max-w-sm rounded-2xl object-cover"
+              />
             )}
 
-            <button
-              onClick={handleSaveVideo}
-              className="w-full bg-[#FF6B00] hover:bg-orange-500 text-white font-bold uppercase text-xs tracking-widest py-3.5 rounded-xl transition-all"
-            >
+            <button type="button" onClick={handleSaveVideo} className={`${primaryButton} h-12 w-full`}>
               Publicar clase
             </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── LISTA DE CLASES ── */}
-      <div className="space-y-3">
-        {videos.length === 0 && (
-          <div className="py-16 text-center border border-dashed border-white/[0.07] rounded-2xl">
-            <Video size={32} className="mx-auto text-white/10 mb-3" />
-            <p className="text-sm font-bold uppercase tracking-widest text-white/20">
-              Sin clases aún
-            </p>
-            <p className="text-xs text-white/10 mt-1">
-              Agregá la primera clase con el botón de arriba.
-            </p>
           </div>
-        )}
+        </div>
+      ) : (
+        /* ── LISTA DE CLASES ── */
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-[#57534e]">
+              <span className="font-semibold tabular-nums text-[#0a0a0a]">{videos.length}</span>{" "}
+              {videos.length === 1 ? "clase" : "clases"} · cada una puede tener preguntas de evaluación
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddForm(true);
+                setEditingVideoId(null);
+              }}
+              className={primaryButton}
+            >
+              <Plus size={16} aria-hidden="true" /> Nueva clase
+            </button>
+          </div>
 
-        {[...videos]
-          .sort((a, b) => a.order - b.order)
-          .map((video, idx) => {
-            const videoStat = stats.find((s) => s.titulo === video.title);
-            const isCritical = videoStat?.tasaError > 40;
-            const thumbUrl = `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`;
-            const approvalRate = 100 - (videoStat?.tasaError || 0);
+          {videos.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#e7e5e4] px-6 py-16 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e]">
+                <Video size={20} aria-hidden="true" />
+              </span>
+              <h3 className="mt-3 font-semibold">Todavía no hay clases</h3>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-[#57534e]">Agregá la primera con el botón “Nueva clase”.</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {sortedVideos.map((video, idx) => {
+                const videoStat = stats.find((st) => st.videoId === video.id);
+                const approved = videoStat?.aprobados || 0;
+                const stuck = videoStat?.trabados || 0;
+                const enrolled = videoStat?.inscriptos || 0;
+                const questions = video.videoReview?.length || 0;
+                const feedback = video.classFeedback || [];
+                const likes = feedback.filter((f: any) => f.rating === "like").length;
+                const regular = feedback.filter((f: any) => f.rating === "regular").length;
+                const dislikes = feedback.filter((f: any) => f.rating === "dislike").length;
 
-            return (
-              <motion.div
-                key={video.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="group bg-[#0f0f0f] border border-white/[0.07] hover:border-[#FF6B00]/30 rounded-2xl overflow-hidden transition-all"
-              >
-                {editingVideoId === video.id ? (
-                  // ── FORMULARIO DE EDICIÓN INLINE ──
-                  <div className="p-6 space-y-4 bg-white/[0.02]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-[#FF6B00] uppercase tracking-widest">
-                          Editar Título
-                        </label>
-                        <input
-                          type="text"
-                          value={editVideoData.title}
-                          onChange={(e) =>
-                            setEditVideoData({
-                              ...editVideoData,
-                              title: e.target.value,
-                            })
-                          }
-                          className="w-full bg-black/50 border border-white/[0.08] px-4 py-2.5 rounded-xl text-sm text-white outline-none focus:border-[#FF6B00]/40 transition-all"
-                        />
+                return (
+                  <motion.li
+                    key={video.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    className="rounded-2xl border border-[#e7e5e4] bg-white transition-colors hover:border-[#d6d3d1]"
+                  >
+                    {editingVideoId === video.id ? (
+                      <div className="space-y-4 p-5">
+                        <div className="grid grid-cols-[1fr_8rem] gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor={`editar-titulo-${video.id}`} className="text-sm font-medium text-[#292524]">Título</label>
+                            <input
+                              id={`editar-titulo-${video.id}`}
+                              type="text"
+                              value={editVideoData.title}
+                              onChange={(e) => setEditVideoData({ ...editVideoData, title: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label htmlFor={`editar-orden-${video.id}`} className="text-sm font-medium text-[#292524]">Orden</label>
+                            <input
+                              id={`editar-orden-${video.id}`}
+                              type="number"
+                              min="1"
+                              value={editVideoData.order}
+                              onChange={(e) => setEditVideoData({ ...editVideoData, order: Number(e.target.value) })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingVideoId(null)}
+                            className="h-10 rounded-full border border-[#e7e5e4] px-5 text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                          >
+                            Cancelar
+                          </button>
+                          <button type="button" onClick={() => handleUpdateVideo(video.id)} className={primaryButton}>
+                            <Save size={15} aria-hidden="true" /> Guardar
+                          </button>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-[#FF6B00] uppercase tracking-widest">
-                          Editar Orden (Número)
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={editVideoData.order}
-                          onChange={(e) =>
-                            setEditVideoData({
-                              ...editVideoData,
-                              order: Number(e.target.value),
-                            })
-                          }
-                          className="w-full bg-black/50 border border-white/[0.08] px-4 py-2.5 rounded-xl text-sm text-white outline-none focus:border-[#FF6B00]/40 transition-all"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-4">
-                      <button
-                        onClick={() => setEditingVideoId(null)}
-                        className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wide text-white/40 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] transition-all"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={() => handleUpdateVideo(video.id)}
-                        className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wide text-black bg-[#FF6B00] hover:bg-orange-500 transition-all"
-                      >
-                        <Save size={14} /> Guardar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  // ── VISTA NORMAL (NO EDICIÓN) ──
-                  <div className="flex items-center gap-4 p-4">
-                    <div className="relative w-24 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 hidden sm:block">
-                      <img
-                        src={thumbUrl}
-                        className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity"
-                        alt="Miniatura"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Play size={14} className="text-white/70" />
-                      </div>
-                    </div>
-
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0 border ${
-                        isCritical
-                          ? "bg-red-500/10 border-red-500/20 text-red-400"
-                          : "bg-white/[0.04] border-white/[0.08] text-white/30"
-                      }`}
-                    >
-                      {video.order}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-black uppercase text-white group-hover:text-[#FF6B00] transition-colors truncate">
-                        {video.title}
-                      </h4>
-                      <div className="flex items-center gap-3 mt-1">
-                        {isCritical ? (
-                          <span className="text-[10px] text-red-400 font-bold flex items-center gap-1">
-                            <AlertCircle size={10} /> Error:{" "}
-                            {videoStat.tasaError}%
+                    ) : (
+                      <div className="flex items-center gap-4 p-3 pr-4">
+                        <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-xl bg-[#f5f5f4]">
+                          <img
+                            src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`}
+                            className="h-full w-full object-cover"
+                            alt=""
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            <Play size={14} className="fill-white text-white" aria-hidden="true" />
                           </span>
-                        ) : (
-                          <span className="text-[12px] text-white/25 font-medium flex items-center gap-1">
-                            <BarChart2 size={10} /> Aprobación: {approvalRate}%
-                          </span>
-                        )}
-                        <span className="text-[16px] text-white/20 flex items-center gap-1">
-                          <BookOpen size={16} />{" "}
-                          {video.videoReview?.length || 0} pregunta
-                          {video.videoReview?.length !== 1 ? "s" : ""}
+                        </div>
+
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums ${
+                            stuck > 0 ? "bg-[#fef2f2] text-red-700" : "bg-[#f5f5f4] text-[#57534e]"
+                          }`}
+                        >
+                          {video.order}
                         </span>
+
+                        <div className="min-w-0 flex-1">
+                          <h4 className="truncate font-semibold">{video.title}</h4>
+                          <p className="mt-0.5 flex items-center gap-4 text-sm text-[#57534e]">
+                            <span className="flex items-center gap-1.5" title="Alumnos que aprobaron esta clase">
+                              <CheckCircle2 size={14} aria-hidden="true" />
+                              {enrolled > 0 ? `${approved} de ${enrolled} aprobaron` : `${approved} aprobaron`}
+                            </span>
+                            {stuck > 0 && (
+                              <span
+                                className="flex items-center gap-1.5 rounded-full bg-[#fef2f2] px-2 py-0.5 font-medium text-red-700"
+                                title="Fallaron 2 veces una pregunta: habilitales el reintento desde Alumnos"
+                              >
+                                <AlertCircle size={14} aria-hidden="true" /> {stuck} {stuck === 1 ? "trabado" : "trabados"}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1.5">
+                              <BookOpen size={14} aria-hidden="true" /> {questions} {questions === 1 ? "pregunta" : "preguntas"}
+                            </span>
+                            {feedback.length > 0 && (
+                              <span className="flex items-center gap-2 tabular-nums" aria-label={`${likes} me gustó, ${regular} regular, ${dislikes} no me gustó`}>
+                                <span>😀 {likes}</span>
+                                <span>😐 {regular}</span>
+                                <span>😕 {dislikes}</span>
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackVideo(video)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#e7e5e4] px-4 text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                          >
+                            <Smile size={15} aria-hidden="true" /> Opiniones
+                            {feedback.length > 0 && (
+                              <span className="rounded-full bg-[#f5f5f4] px-1.5 text-xs tabular-nums">{feedback.length}</span>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openModal(video)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#fff7ed] px-4 text-sm font-medium text-[#C2410C] transition-colors hover:bg-[#ffedd5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                          >
+                            <MessageSquareText size={15} aria-hidden="true" /> Preguntas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startEditing(video)}
+                            aria-label={`Editar ${video.title}`}
+                            title="Editar título y orden"
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVideoToDelete(video)}
+                            aria-label={`Eliminar ${video.title}`}
+                            title="Eliminar clase"
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-600 transition-colors hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                  </motion.li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => startEditing(video)}
-                        title="Editar título/orden"
-                        className="p-2.5 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.1] text-white/40 hover:text-white rounded-xl transition-all"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => setVideoToDelete(video)}
-                        title="Eliminar clase"
-                        className="p-2.5 bg-white/[0.04] border border-white/[0.08] hover:bg-red-500/20 hover:border-red-500/40 text-white/40 hover:text-red-400 rounded-xl transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => openModal(video)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.04] border border-white/[0.08] hover:bg-[#FF6B00] hover:border-[#FF6B00] hover:text-black text-white/40 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all ml-2"
-                      >
-                        <span className="hidden sm:inline">Preguntas</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-      </div>
-
-      {/* ── MODAL DE CONFIRMACIÓN DE ELIMINAR ── */}
+      {/* ── CONFIRMAR ELIMINAR CLASE ── */}
       <AnimatePresence>
         {videoToDelete && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[7000] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setVideoToDelete(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-borrar-clase"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-[#0f0f0f] border border-red-500/20 w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-8 text-center"
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 text-center shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
             >
-              <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-red-500/20">
-                <Trash2 size={32} className="text-red-500" />
-              </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-white mb-2">
-                Eliminar Clase
-              </h3>
-              <p className="text-sm text-white/50 mb-8 leading-relaxed">
-                ¿Estás seguro de que deseas eliminar{" "}
-                <strong className="text-white">"{videoToDelete.title}"</strong>?
-                <br />
-                Esta acción también borrará todas sus evaluaciones y{" "}
-                <strong className="text-red-400">no se puede deshacer</strong>.
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2] text-red-700">
+                <Trash2 size={22} aria-hidden="true" />
+              </span>
+              <h3 id="titulo-borrar-clase" className="mt-4 text-xl font-semibold tracking-[-0.01em]">¿Eliminar esta clase?</h3>
+              <p className="mt-2 text-sm text-[#57534e]">
+                Se borra <span className="font-medium text-[#0a0a0a]">“{videoToDelete.title}”</span> con todas sus preguntas. No se puede deshacer.
               </p>
-              <div className="flex items-center gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-3">
                 <button
+                  type="button"
                   onClick={() => setVideoToDelete(null)}
-                  className="flex-1 py-3.5 rounded-xl font-bold uppercase text-xs tracking-widest text-white/50 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] transition-all"
+                  className="h-12 rounded-full border border-[#e7e5e4] text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
                 >
                   Cancelar
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleConfirmDelete(videoToDelete.id)}
-                  className="flex-1 py-3.5 rounded-xl font-bold uppercase text-xs tracking-widest text-white bg-red-500 hover:bg-red-600 shadow-[0_0_20px_rgba(239,68,68,0.2)] transition-all"
+                  className="h-12 rounded-full bg-red-700 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2"
                 >
-                  Sí, eliminar
+                  Eliminar
                 </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── MODAL DE PREGUNTAS ── */}
-      <AnimatePresence>
-        {modalVideo && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 md:p-8">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setModalVideo(null);
-                setAddingQuestionTo(null);
-              }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-xl"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97, y: 12 }}
-              className="relative bg-[#0f0f0f] border border-white/[0.08] w-full max-w-3xl max-h-[88vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-            >
-              <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-16 h-10 rounded-lg overflow-hidden border border-white/[0.08] shrink-0 hidden sm:block">
-                    <img
-                      src={`https://img.youtube.com/vi/${modalVideo.videoId}/mqdefault.jpg`}
-                      className="w-full h-full object-cover opacity-60"
-                      alt="Miniatura"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Play size={10} className="text-white/70" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-[#FF6B00]/70 uppercase tracking-widest">
-                      Clase {modalVideo.order}
-                    </p>
-                    <h3 className="text-base font-black uppercase tracking-tight text-white leading-tight">
-                      {modalVideo.title}
-                    </h3>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setModalVideo(null);
-                    setAddingQuestionTo(null);
-                  }}
-                  className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/30 hover:bg-white/[0.08] hover:text-white transition-all"
-                >
-                  <X size={15} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {modalVideo.videoReview && modalVideo.videoReview.length > 0 ? (
-                  <>
-                    {modalVideo.videoReview.map(
-                      (review: any, index: number) => (
-                        <div
-                          key={review.id || `temp-${index}`}
-                          className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden"
-                        >
-                          <div className="px-5 py-3 border-b border-white/[0.05] flex items-center justify-between">
-                            <span className="text-[10px] font-black text-[#FF6B00]/70 uppercase tracking-widest">
-                              Pregunta {index + 1}
-                            </span>
-                          </div>
-                          <div className="p-5">
-                            {/* Le pasamos onSuccess por si edita la pregunta */}
-                            <EvaluationForm
-                              videoId={modalVideo.id}
-                              initialData={review}
-                              onSuccess={(data: any) =>
-                                handleQuestionAdded(modalVideo.id, data)
-                              }
-                            />
-                          </div>
-                        </div>
-                      ),
-                    )}
-                    {addingQuestionTo === modalVideo.id ? (
-                      <div className="bg-[#FF6B00]/[0.04] border border-[#FF6B00]/20 rounded-xl overflow-hidden">
-                        <div className="px-5 py-3 border-b border-[#FF6B00]/10 flex items-center justify-between">
-                          <span className="text-[10px] font-black text-[#FF6B00]/70 uppercase tracking-widest">
-                            Nueva pregunta
-                          </span>
-                          <button
-                            onClick={() => setAddingQuestionTo(null)}
-                            className="text-[10px] text-white/30 hover:text-red-400 font-bold uppercase tracking-wide transition-colors flex items-center gap-1"
-                          >
-                            <X size={11} /> Cancelar
-                          </button>
-                        </div>
-                        <div className="p-5">
-                          {/* ACÁ LE PASAMOS EL ONSUCCESS CUANDO AGREGA OTRA */}
-                          <EvaluationForm
-                            videoId={modalVideo.id}
-                            onSuccess={(data: any) =>
-                              handleQuestionAdded(modalVideo.id, data)
-                            }
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setAddingQuestionTo(modalVideo.id)}
-                        className="w-full py-3.5 rounded-xl border border-dashed border-white/[0.08] text-white/30 text-[11px] font-bold uppercase tracking-widest hover:border-[#FF6B00]/40 hover:text-[#FF6B00] hover:bg-[#FF6B00]/[0.04] transition-all flex items-center justify-center gap-2"
-                      >
-                        <Plus size={14} /> Añadir otra pregunta
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
-                    <div className="px-5 py-3 border-b border-white/[0.05]">
-                      <span className="text-[10px] font-black text-[#FF6B00]/70 uppercase tracking-widest">
-                        Primera pregunta
-                      </span>
-                    </div>
-                    <div className="p-5">
-                      {/* ACÁ LE PASAMOS EL ONSUCCESS EN LA PRIMERA */}
-                      <EvaluationForm
-                        videoId={modalVideo.id}
-                        onSuccess={(data: any) =>
-                          handleQuestionAdded(modalVideo.id, data)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
             </motion.div>
           </div>

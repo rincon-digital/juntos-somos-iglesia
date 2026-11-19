@@ -2,11 +2,10 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { FileText, GraduationCap, MessageSquareQuote, PlusCircle, UserPlus } from "lucide-react";
+import { AlertCircle, ArrowRight, FileText, GraduationCap, MessageSquareQuote, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/actions/auth/auth";
-import { getDashboardAnalytics, getCoursesWithCount } from "@/actions/admin/dashboard";
-import { Role } from "@/lib/types/definitions";
+import { getDashboardAnalytics, getCoursesWithCount, getStuckStudents } from "@/actions/admin/dashboard";
 import { toast } from "@/lib/toast";
 import { AnimatedNumber, BarChart, ProgressBar, Ring, Sparkline } from "@/components/admin/DashboardCharts";
 
@@ -113,6 +112,7 @@ export default function AdminStatsPage() {
   const [user, setUser] = useState<any>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [stuck, setStuck] = useState<Awaited<ReturnType<typeof getStuckStudents>>>([]);
 
   const router = useRouter();
   const verse = getDailyVerse();
@@ -124,10 +124,15 @@ export default function AdminStatsPage() {
         router.push("/login-admin");
         return;
       }
-      const [data, coursesData] = await Promise.all([getDashboardAnalytics(), getCoursesWithCount()]);
+      const [data, coursesData, stuckData] = await Promise.all([
+        getDashboardAnalytics(),
+        getCoursesWithCount(),
+        getStuckStudents(),
+      ]);
       setUser(session);
       setAnalytics(data);
       setCourses(coursesData);
+      setStuck(stuckData);
     } catch (error) {
       console.error("Error al cargar datos:", error);
       toast.error("No se pudieron cargar las métricas");
@@ -140,25 +145,24 @@ export default function AdminStatsPage() {
     loadData();
   }, [router]);
 
-  // Todo el panel entra en la pantalla (escritorio): alto de la ventana menos el padding del layout
-  const frame = "flex h-[calc(100svh-3.5rem)] min-h-[640px] flex-col gap-4 font-[family-name:var(--font-poppins)]";
+  // Cada tarjeta mide lo que necesita su contenido (no se estira con el alto de la pantalla)
+  const frame = "flex flex-col gap-4 font-[family-name:var(--font-poppins)]";
 
   if (loading || !analytics) {
     return (
       <div className={frame} aria-busy="true">
         <div className="h-16 w-72 animate-pulse rounded-3xl bg-[#f5f5f4]" />
-        <div className="grid grid-cols-6 gap-4">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
+        <div className="grid grid-cols-2 gap-4">
+          {[0, 1].map((i) => (
             <div key={i} className="h-32 animate-pulse rounded-[1.75rem] bg-[#f5f5f4]" />
           ))}
         </div>
-        <div className="flex-1 animate-pulse rounded-[1.75rem] bg-[#f5f5f4]" />
+        <div className="h-[420px] animate-pulse rounded-[1.75rem] bg-[#f5f5f4]" />
       </div>
     );
   }
 
   const { kpis, series, activity } = analytics;
-  const isSuperAdmin = user?.role === Role.superadmin;
   const firstName = (user?.fullName || user?.username || "").split(" ")[0];
   const today = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -176,35 +180,71 @@ export default function AdminStatsPage() {
             Hola, {firstName} <span className="font-normal text-[#57534e]">· esto es lo que está pasando en la iglesia</span>
           </h1>
         </div>
-        {isSuperAdmin && (
-          <Link
-            href="/admin/courses"
-            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-[#0a0a0a] px-5 text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
-          >
-            <PlusCircle size={16} aria-hidden="true" />
-            Crear curso
-          </Link>
-        )}
       </header>
 
+      {/* PARA REVISAR: alumnos trabados, agrupados por clase (un aviso por clase, no por alumno) */}
+      {stuck.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+          aria-labelledby="para-revisar"
+          className="rounded-[1.75rem] border border-[#fecaca] bg-[#fef2f2] p-5"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} className="text-red-700" aria-hidden="true" />
+            <h2 id="para-revisar" className="text-lg font-semibold tracking-[-0.01em]">Para revisar</h2>
+            <span className="rounded-full bg-red-700 px-2 text-xs font-semibold tabular-nums text-white">
+              {stuck.reduce((acc, g) => acc + g.count, 0)}
+            </span>
+            <p className="ml-1 text-sm text-[#57534e]">Alumnos que fallaron 2 veces y esperan que les habilites el reintento.</p>
+          </div>
+          <ul className="mt-3 divide-y divide-[#fecaca]/70">
+            {stuck.slice(0, 4).map((g) => {
+              const shown = g.names.slice(0, 3);
+              const rest = g.names.length - shown.length;
+              const names =
+                shown.length === 1
+                  ? shown[0]
+                  : `${shown.slice(0, -1).join(", ")}${rest > 0 ? `, ${shown[shown.length - 1]} y ${rest} más` : ` y ${shown[shown.length - 1]}`}`;
+              return (
+                <li key={g.videoId} className="flex items-center justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      <span className="capitalize">{g.courseName.toLowerCase()}</span>
+                      <span className="text-[#57534e]"> · Clase {g.order} · {g.title}</span>
+                    </p>
+                    <p className="truncate text-sm text-[#57534e]">
+                      <span className="font-semibold text-red-700">
+                        {g.count} {g.count === 1 ? "alumno espera" : "alumnos esperan"}
+                      </span>{" "}
+                      reintento: {names}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/admin/courses?curso=${g.courseId}`}
+                    className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#0a0a0a] px-4 text-sm font-medium text-white transition-[transform,background-color] hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+                  >
+                    Revisar <ArrowRight size={15} aria-hidden="true" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {stuck.length > 4 && (
+            <p className="pt-2 text-sm text-[#57534e]">Y {stuck.length - 4} {stuck.length - 4 === 1 ? "clase más" : "clases más"} con alumnos trabados.</p>
+          )}
+        </motion.section>
+      )}
+
       {/* MÉTRICAS */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <KpiCard index={0} label="Miembros" value={kpis.totalMembers} hint={`+${kpis.membersThisMonth} este mes`} spark={series.map((s) => s.members)} />
         <KpiCard index={1} label="Inscripciones" value={kpis.totalRegistrations} hint={`+${kpis.registrationsThisMonth} este mes`} spark={series.map((s) => s.registrations)} />
-        <KpiCard index={2} label="Clases completadas" value={kpis.completedVideos} hint="Videos terminados" />
-        <KpiCard
-          index={3}
-          label="Aciertos"
-          value={kpis.accuracy}
-          suffix="%"
-          hint={kpis.answers > 0 ? `Sobre ${kpis.answers} respuestas` : "Sin respuestas aún"}
-        />
-        <KpiCard index={4} label="Testimonios" value={kpis.totalTestimonies} hint="Ver todos" href="/admin/testimony" />
-        <KpiCard index={5} label="Artículos" value={kpis.totalArticles} hint="Ver todos" href="/admin/articles" />
       </div>
 
       {/* GRÁFICO, ACTIVIDAD, OCUPACIÓN Y PALABRA */}
-      <div className="grid min-h-0 flex-1 grid-cols-12 grid-rows-2 gap-4">
+      <div className="grid grid-cols-12 gap-4">
         <motion.section custom={6} variants={reveal} initial="hidden" animate="visible" className={`${card} col-span-6 row-span-2 flex min-h-0 flex-col`}>
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
@@ -233,7 +273,7 @@ export default function AdminStatsPage() {
               </dd>
             </div>
           </dl>
-          <div className="mt-auto h-full max-h-[240px] min-h-0 pt-6">
+          <div className="mt-auto h-[240px] pt-6">
             <BarChart
               data={series}
               series={[

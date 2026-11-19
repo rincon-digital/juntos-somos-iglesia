@@ -146,15 +146,51 @@ export async function deleteVideo(id: string) {
   }
 }
 
-export async function completeStudentLesson(userId: string, videoId: string) {
+// ── Dónde quedó el alumno en el video (para "Seguir desde…") ──
+
+export async function getVideoPosition(videoId: string): Promise<number> {
+  const session = await validateSessionUser();
+  if (!session?.userId || !videoId) return 0;
+  const progress = await prisma.userVideoProgress.findUnique({
+    where: { userId_videoId: { userId: session.userId, videoId } },
+    select: { lastPosition: true },
+  });
+  return progress?.lastPosition ?? 0;
+}
+
+export async function saveVideoPosition(videoId: string, seconds: number) {
+  const session = await validateSessionUser();
+  if (!session?.userId || !videoId) return { error: "Sesión no válida" };
+  const lastPosition = Math.max(0, Math.floor(Number(seconds) || 0));
   try {
     await prisma.userVideoProgress.upsert({
-      where: { userId_videoId: { userId, videoId } },
-      update: { isCompleted: true },
-      create: { userId, videoId, isCompleted: true },
+      where: { userId_videoId: { userId: session.userId, videoId } },
+      update: { lastPosition },
+      create: { userId: session.userId, videoId, lastPosition },
     });
     return { success: true };
-  } catch (error) {
-    return { error: "No se pudo guardar el progreso" };
+  } catch {
+    return { error: "No se pudo guardar el avance" };
+  }
+}
+
+// ── Opinión del alumno al aprobar una clase ──
+
+const RATINGS = ["like", "regular", "dislike"] as const;
+
+export async function saveClassFeedback(videoId: string, rating: string, comment?: string) {
+  const session = await validateSessionUser();
+  if (!session?.userId || !videoId) return { error: "Sesión no válida" };
+  if (!RATINGS.includes(rating as any)) return { error: "Opinión no válida" };
+  const text = (comment || "").trim().slice(0, 500) || null;
+  try {
+    await prisma.classFeedback.upsert({
+      where: { userId_videoId: { userId: session.userId, videoId } },
+      update: { rating, comment: text },
+      create: { userId: session.userId, videoId, rating, comment: text },
+    });
+    return { success: true };
+  } catch {
+    return { error: "No se pudo guardar tu opinión" };
   }
 }

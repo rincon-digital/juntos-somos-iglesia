@@ -131,13 +131,18 @@ export default function Cursos({
               day: "numeric",
               month: "short",
             });
+            const openDate = curso.openEnrollment ? new Date(curso.openEnrollment) : null;
+            const notOpenYet = !!openDate && openDate.getTime() > Date.now();
+            const opens = openDate?.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
             const isFull = quota > 0 && registered >= quota;
             const isClosed = deadlineDate.getTime() < Date.now();
-            const label = isFull
-              ? "Sin cupos"
-              : isClosed
-                ? "Inscripción cerrada"
-                : "Inscribirme";
+            const label = notOpenYet
+              ? "Próximamente"
+              : isFull
+                ? "Sin cupos"
+                : isClosed
+                  ? "Inscripción cerrada"
+                  : "Inscribirme";
 
             return (
               <motion.article
@@ -168,6 +173,14 @@ export default function Cursos({
                         </strong>
                       </span>
                     </li>
+                    {notOpenYet && (
+                      <li className="flex items-center gap-1.5">
+                        <CalendarIcon />
+                        <span>
+                          Abre <strong className="font-semibold text-[#0a0a0a]">{opens}</strong>
+                        </span>
+                      </li>
+                    )}
                     <li className="flex items-center gap-1.5">
                       <CalendarIcon />
                       <span>
@@ -179,7 +192,7 @@ export default function Cursos({
 
                   <button
                     type="button"
-                    disabled={isFull || isClosed}
+                    disabled={notOpenYet || isFull || isClosed}
                     onClick={() => {
                       setSelectedCurso(curso);
                       setShowRegister(true);

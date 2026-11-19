@@ -52,20 +52,6 @@ export async function createEvaluationVideo(data: createEvaluation) {
   }
 }
 
-export async function getEvaluationForVideo(videoId: string) {
-  try {
-    const evaluation = await prisma.videoReview.findMany({
-      where: {
-        videoId: videoId,
-      },
-    });
-    return evaluation;
-  } catch (error) {
-    console.log(error);
-    return { error: "Error al obtener las evaluaciones." };
-  }
-}
-
 export async function updateEvaluationVideo(
   id: string,
   data: createEvaluation,

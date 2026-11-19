@@ -235,703 +235,529 @@ export default function StudentDashboard() {
 
   if (!student)
     return (
-      <div className="min-h-screen bg-[#060606] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#FF6B00]" size={40} />
+      <div className="flex min-h-screen items-center justify-center bg-[#fafaf9]" aria-busy="true">
+        <Loader2 className="animate-spin text-[#FF6B00]" size={32} aria-label="Cargando" />
       </div>
     );
 
   const registrations = student.courseRegistration || [];
-  // Aquí usamos la lógica que tengas para determinar si está completo o no
-  // Asumiendo que `isCompleted` viene en el curso o puedes chequear progreso, por ahora usaremos una lógica simple.
   const completedCourses = registrations.filter((r: any) => r.isCompleted);
   const activeCourses = registrations.filter((r: any) => !r.isCompleted);
+  const firstName = (student.fullName || "").split(" ")[0];
+  const today = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  const rank = (student.rank || "concurre") as string;
+  const shortDate = (d: string | Date) => new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "short" });
+
+  const closeEnroll = () => {
+    setEnrollModalCourse(null);
+    setCodeDigits(Array(6).fill(""));
+  };
+
+  const inputClass =
+    "h-12 w-full rounded-xl border border-[#e7e5e4] bg-white px-4 text-sm text-[#0a0a0a] outline-none transition-[border-color,box-shadow] placeholder:text-[#a8a29e] hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30";
+  const labelClass = "text-sm font-medium text-[#292524]";
+  const primaryButton =
+    "flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const statusMessage = (
+    <>
+      {status.error && (
+        <p role="alert" className="rounded-xl bg-[#fef2f2] px-4 py-2.5 text-sm text-red-700">
+          {status.error}
+        </p>
+      )}
+      {status.success && (
+        <p role="status" className="rounded-xl bg-[#ecfdf5] px-4 py-2.5 text-sm text-green-700">
+          {status.success}
+        </p>
+      )}
+    </>
+  );
+
+  const passwordField = (id: string, label: string, key: "current" | "new" | "confirm", placeholder: string, extra?: object) => (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className={labelClass}>{label}</label>
+      <div className="relative">
+        <input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          required
+          value={passwords[key]}
+          onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
+          className={`${inputClass} pr-12`}
+          placeholder={placeholder}
+          {...extra}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          aria-label={showPassword ? "Ocultar contraseñas" : "Mostrar contraseñas"}
+          className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#f5f5f4] hover:text-[#0a0a0a]"
+        >
+          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+    </div>
+  );
+
+  const sectionTitle = (title: string, count?: number) => (
+    <div className="mb-4 flex items-baseline gap-2">
+      <h2 className="text-xl font-semibold tracking-[-0.02em]">{title}</h2>
+      {count !== undefined && <span className="text-sm tabular-nums text-[#57534e]">{count}</span>}
+    </div>
+  );
 
   return (
-    <main className="min-h-screen bg-[#060606] text-white selection:bg-[#FF6B00]">
+    <main className="min-h-screen bg-[#fafaf9] text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
       {!selectedCourseId ? (
-        <div className="max-w-7xl mx-auto p-4 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          {/* HEADER PASTORAL */}
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center shadow-xl">
-                <LayoutGrid size={22} className="text-[#FF6B00]" />
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.4em] text-white/20 mb-1">
-                  Panel de Alumno
-                </p>
-                <h1 className="text-2xl font-black uppercase italic tracking-tighter">
-                  Shalom,{" "}
-                  <span className="text-[#FF6B00]">
-                    {student.fullName.split(" ")[0]}
-                  </span>
-                </h1>
+        <div className="mx-auto max-w-5xl px-4 pb-16 pt-6 md:px-6 md:pt-10">
+          {/* ENCABEZADO */}
+          <header className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF6B00]">
+                <img src="/Logo.webp" alt="" className="h-5 w-5 brightness-0 invert" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm text-[#57534e] first-letter:uppercase">{today}</p>
+                <h1 className="truncate text-2xl font-semibold tracking-[-0.03em]">Hola, {firstName}</h1>
               </div>
             </div>
-
-            {/* BOTONES DE ACCIÓN */}
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2">
               <button
+                type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors group"
+                aria-label="Ajustes"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[#e7e5e4] bg-white px-3 text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] sm:px-4"
               >
-                <Settings
-                  size={16}
-                  className="text-white/40 group-hover:text-white transition-colors"
-                />
-                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">
-                  Ajustes
-                </span>
+                <Settings size={16} aria-hidden="true" />
+                <span className="hidden sm:inline">Ajustes</span>
               </button>
-
               <button
+                type="button"
                 onClick={handleLogout}
-                className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-red-500/10 transition-colors group"
-                title="Cerrar Sesión"
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] bg-white text-[#57534e] transition-colors hover:bg-[#fef2f2] hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
               >
-                <LogOut
-                  size={20}
-                  className="text-white/20 group-hover:text-red-500 transition-colors"
-                />
+                <LogOut size={16} aria-hidden="true" />
               </button>
             </div>
           </header>
 
-          <div className="space-y-8">
-            {/* SECCIÓN SUPERIOR: BIENVENIDA Y VERSÍCULO */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-gradient-to-br from-[#FF6B00]/10 to-transparent border border-white/5 p-10 rounded-[2.5rem] relative overflow-hidden group">
-                <Quote className="absolute -right-4 -bottom-4 text-white/[0.03] w-48 h-48" />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Sparkles size={14} className="text-[#FF6B00]" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#FF6B00]">
-                      Palabra del Día
+          {/* PALABRA DEL DÍA Y ESTADO */}
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <figure className="relative overflow-hidden rounded-[1.75rem] border border-[#e7e5e4] bg-white p-6 md:col-span-2 md:p-8">
+              <Quote aria-hidden="true" className="absolute -bottom-6 -right-4 h-36 w-36 text-[#f5f5f4]" />
+              <p className="relative flex items-center gap-2 text-sm font-medium text-[#C2410C]">
+                <Sparkles size={15} aria-hidden="true" /> Palabra del día
+              </p>
+              <blockquote className="relative mt-4 text-xl font-medium leading-snug tracking-[-0.01em] text-balance md:text-2xl">
+                “{verse.text}”
+              </blockquote>
+              <figcaption className="relative mt-3 text-sm text-[#57534e]">{verse.ref}</figcaption>
+            </figure>
+
+            <div className="flex flex-col justify-between rounded-[1.75rem] bg-[#FF6B00] p-6 text-black md:p-8">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-black/10">
+                <Award size={20} aria-hidden="true" />
+              </span>
+              <div className="mt-8">
+                <p className="text-sm font-medium text-black/70">Tu estado en la iglesia</p>
+                <p className="text-3xl font-semibold capitalize tracking-[-0.03em]">{rank}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* MIS CURSOS */}
+          <section className="mt-12" aria-labelledby="mis-cursos">
+            <div id="mis-cursos">{sectionTitle("Mis cursos", activeCourses.length)}</div>
+            {activeCourses.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {activeCourses.map((reg: any) => (
+                  <button
+                    key={reg.id}
+                    type="button"
+                    onClick={() => setSelectedCourseId(reg.courseId)}
+                    className="group flex flex-col rounded-[1.5rem] border border-[#e7e5e4] bg-white p-5 text-left shadow-[0_8px_24px_rgba(0,0,0,0.04)] transition-[border-color,transform] duration-200 hover:border-[#d6d3d1] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff7ed] text-[#C2410C]">
+                      <BookOpen size={18} aria-hidden="true" />
                     </span>
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-medium italic leading-relaxed mb-4 text-white/90">
-                    "{verse.text}"
-                  </h2>
-                  <p className="text-[#FF6B00] font-black uppercase tracking-widest text-[10px]">
-                    — {verse.ref}
-                  </p>
-                </div>
+                    <h3 className="mt-4 line-clamp-2 text-xl font-semibold capitalize leading-tight tracking-[-0.02em]">
+                      {reg.course.name.toLowerCase()}
+                    </h3>
+                    {reg.course.description && (
+                      <p className="mt-1.5 line-clamp-2 text-sm text-[#57534e]">{reg.course.description}</p>
+                    )}
+                    <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-[#C2410C]">
+                      Continuar
+                      <ArrowRight size={15} aria-hidden="true" className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </span>
+                  </button>
+                ))}
               </div>
-
-              <div className="bg-[#FF6B00] p-10 rounded-[2.5rem] flex flex-col justify-between text-black group hover:scale-[1.02] transition-transform shadow-2xl">
-                <Award size={40} className="mb-8" />
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">
-                    Rango Ministerial
-                  </p>
-                  <h3 className="text-4xl font-black uppercase italic tracking-tighter leading-none">
-                    {student.rank || "Alumno"}
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            {/* CURSOS EN PROGRESO (ACTIVOS) */}
-            {activeCourses.length > 0 && (
-              <div className="pt-10">
-                <div className="flex items-center gap-4 mb-8 text-white/20">
-                  <PlayCircle size={16} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
-                    Sendas en Curso
-                  </h3>
-                  <div className="h-px flex-1 bg-white/5"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activeCourses.map((reg: any) => (
-                    <button
-                      key={reg.id}
-                      onClick={() => setSelectedCourseId(reg.courseId)}
-                      className="group relative bg-[#0d0d0d] border border-[#FF6B00]/20 p-8 rounded-[2.5rem] hover:bg-[#FF6B00]/5 hover:border-[#FF6B00]/60 transition-all text-left overflow-hidden shadow-2xl"
-                    >
-                      <div className="flex justify-between items-start mb-8 relative z-10">
-                        <div className="w-12 h-12 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-xl flex items-center justify-center">
-                          <BookOpen size={20} className="text-[#FF6B00]" />
-                        </div>
-                        <ChevronRight className="text-white/20 group-hover:text-[#FF6B00] group-hover:translate-x-1 transition-all" />
-                      </div>
-                      <h4 className="text-2xl font-black uppercase italic tracking-tighter mb-2 leading-none text-white relative z-10">
-                        {reg.course.name}
-                      </h4>
-                      <p className="text-xs text-white/50 line-clamp-2 font-medium mb-6">
-                        {reg.course.description}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse" />
-                        <span className="text-[10px] font-black text-[#FF6B00] uppercase tracking-widest relative z-10">
-                          Continuar lección
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+            ) : (
+              <div className="rounded-[1.5rem] border border-dashed border-[#d6d3d1] px-6 py-10 text-center">
+                <p className="font-semibold">Todavía no estás en ningún curso</p>
+                <p className="mt-1 text-sm text-[#57534e]">Inscribite en uno de los cursos disponibles con el código que te dieron.</p>
               </div>
             )}
+          </section>
 
-            {/* NUEVOS CURSOS DISPONIBLES (SUGERENCIAS) */}
-            {availableCourses.length > 0 && (
-              <div className="pt-10">
-                <div className="flex items-center gap-4 mb-8 text-white/20">
-                  <Sparkles size={16} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
-                    Nuevos Caminos Disponibles
-                  </h3>
-                  <div className="h-px flex-1 bg-white/5"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {availableCourses.map((course: any) => (
-                    <div
-                      key={course.id}
-                      className="bg-white/[0.02] border border-white/5 p-8 rounded-[2.5rem] flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-6">
-                          <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center">
-                            <GraduationCap
-                              size={18}
-                              className="text-white/40"
-                            />
-                          </div>
-                          {course.deadline && (
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full">
-                              <CalendarClock
-                                size={12}
-                                className="text-white/40"
-                              />
-                              <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">
-                                {new Date(course.deadline).toLocaleDateString(
-                                  "es-AR",
-                                  { month: "short", day: "numeric" },
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <h4 className="text-xl font-black uppercase italic tracking-tighter mb-2 text-white">
-                          {course.name}
-                        </h4>
-                        <p className="text-xs text-white/40 line-clamp-3 mb-6">
-                          {course.description}
-                        </p>
-                      </div>
-
+          {/* CURSOS DISPONIBLES */}
+          {availableCourses.length > 0 && (
+            <section className="mt-12" aria-labelledby="cursos-disponibles">
+              <div id="cursos-disponibles">{sectionTitle("Cursos disponibles", availableCourses.length)}</div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {availableCourses.map((course: any) => {
+                  const registered = course._count?.courseRegistration || 0;
+                  const isFull = course.quotaLimit > 0 && registered >= course.quotaLimit;
+                  const notOpenYet = course.openEnrollment && new Date(course.openEnrollment).getTime() > Date.now();
+                  const isClosed = course.deadline && new Date(course.deadline).getTime() < Date.now();
+                  const label = notOpenYet ? "Próximamente" : isFull ? "Sin cupos" : isClosed ? "Inscripción cerrada" : "Inscribirme";
+                  return (
+                    <article key={course.id} className="flex flex-col rounded-[1.5rem] border border-[#e7e5e4] bg-white p-5">
+                      <h3 className="line-clamp-2 text-xl font-semibold capitalize leading-tight tracking-[-0.02em]">
+                        {course.name.toLowerCase()}
+                      </h3>
+                      {course.description && (
+                        <p className="mt-1.5 line-clamp-2 text-sm text-[#57534e]">{course.description}</p>
+                      )}
+                      <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-[#57534e]">
+                        <li className="flex items-center gap-1.5">
+                          <User size={15} aria-hidden="true" />
+                          Cupos <strong className="font-semibold tabular-nums text-[#0a0a0a]">{registered}/{course.quotaLimit}</strong>
+                        </li>
+                        {notOpenYet ? (
+                          <li className="flex items-center gap-1.5">
+                            <CalendarClock size={15} aria-hidden="true" />
+                            Abre <strong className="font-semibold text-[#0a0a0a]">{shortDate(course.openEnrollment)}</strong>
+                          </li>
+                        ) : (
+                          course.deadline && (
+                            <li className="flex items-center gap-1.5">
+                              <CalendarClock size={15} aria-hidden="true" />
+                              Cierra <strong className="font-semibold text-[#0a0a0a]">{shortDate(course.deadline)}</strong>
+                            </li>
+                          )
+                        )}
+                      </ul>
                       <button
+                        type="button"
                         onClick={() => setEnrollModalCourse(course)}
-                        className="w-full py-4 bg-white/5 hover:bg-white text-white hover:text-black transition-all rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group"
+                        disabled={!!notOpenYet || isFull || !!isClosed}
+                        className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#0a0a0a] text-sm font-medium text-white transition-[transform,background-color] duration-200 hover:bg-[#292524] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#e7e5e4] disabled:text-[#57534e] disabled:active:scale-100"
                       >
-                        <Unlock
-                          size={14}
-                          className="group-hover:text-[#FF6B00]"
-                        />
-                        Inscribirme
+                        {label}
                       </button>
-                    </div>
-                  ))}
-                </div>
+                    </article>
+                  );
+                })}
               </div>
-            )}
+            </section>
+          )}
 
-            {/* CURSOS FINALIZADOS */}
-            {completedCourses.length > 0 && (
-              <div className="pt-10">
-                <div className="flex items-center gap-4 mb-8 text-white/20">
-                  <CheckCircle2 size={16} />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
-                    Sendas Finalizadas
-                  </h3>
-                  <div className="h-px flex-1 bg-white/5"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {completedCourses.map((reg: any) => (
-                    <div
-                      key={reg.id}
-                      className="bg-green-500/5 border border-green-500/20 p-6 rounded-[2rem] flex items-center gap-4"
-                    >
-                      <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center shrink-0">
-                        <Award size={20} className="text-green-500" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black uppercase italic tracking-tighter text-white">
-                          {reg.course.name}
-                        </h4>
-                        <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest mt-1">
-                          Completado
-                        </p>
-                      </div>
+          {/* CURSOS TERMINADOS */}
+          {completedCourses.length > 0 && (
+            <section className="mt-12" aria-labelledby="cursos-terminados">
+              <div id="cursos-terminados">{sectionTitle("Cursos terminados", completedCourses.length)}</div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {completedCourses.map((reg: any) => (
+                  <div key={reg.id} className="flex items-center gap-3 rounded-2xl border border-[#e7e5e4] bg-white p-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ecfdf5] text-green-700">
+                      <CheckCircle2 size={18} aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold capitalize">{reg.course.name.toLowerCase()}</p>
+                      <p className="text-sm text-green-700">Completado</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </section>
+          )}
 
-            <div className="pt-10">
-              <UserTestimonyManager />
-            </div>
+          <div className="mt-12">
+            <UserTestimonyManager />
           </div>
         </div>
       ) : (
-        /* VISTA DE MAPA FULL-SCREEN */
-        <div className="w-full min-h-screen flex flex-col animate-in fade-in zoom-in-95 duration-500 bg-[#050505]">
-          <nav className="w-full p-6 md:p-8 flex justify-between items-center border-b border-white/5 bg-[#060606]">
-            <button
-              onClick={() => setSelectedCourseId(null)}
-              className="flex items-center gap-3 text-white/40 hover:text-white transition-all group"
-            >
-              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#FF6B00] group-hover:text-black transition-all">
-                <ArrowLeft size={18} />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">
-                Volver al Panel
-              </span>
-            </button>
-            <div className="text-right">
-              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 block mb-1">
-                Formación Ministerial
-              </span>
-              <h2 className="text-xl font-black uppercase italic text-[#FF6B00] tracking-tighter">
-                {roadmapData?.courseName || "Cargando..."}
-              </h2>
+        /* VISTA DEL CURSO */
+        <div className="min-h-screen">
+          <div className="sticky top-0 z-30 border-b border-[#e7e5e4] bg-[#fafaf9]/90 backdrop-blur-md">
+            <div className="mx-auto flex h-16 max-w-3xl items-center px-4 md:px-6">
+              <button
+                type="button"
+                onClick={() => setSelectedCourseId(null)}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#e7e5e4] bg-white pl-3 pr-4 text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+              >
+                <ArrowLeft size={16} aria-hidden="true" /> Mis cursos
+              </button>
             </div>
-          </nav>
-          <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
-            {isLoadingRoadmap ? (
-              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin text-[#FF6B00]" size={40} />
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 italic">
-                  Desplegando camino de fe...
-                </p>
-              </div>
-            ) : roadmapData?.roadmap && roadmapData.roadmap.length > 0 ? (
-              <div className="w-full h-full">
-                <FaithMap
-                  roadmap={roadmapData.roadmap}
-                  userId={student.id}
-                  onRefresh={mutate}
-                  courseName={roadmapData.courseName}
-                />
-              </div>
-            ) : (
-              <div className="max-w-md text-center space-y-6 p-10 bg-white/5 border border-white/10 rounded-[3rem]">
-                <AlertCircle className="mx-auto text-[#FF6B00]" size={48} />
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter">
-                  Senda en Construcción
-                </h3>
-                <p className="text-white/40 text-xs font-medium leading-relaxed">
-                  El Pastor aún está preparando las lecciones para este camino.
-                  Vuelve pronto para comenzar tu formación.
-                </p>
-                <button
-                  onClick={() => setSelectedCourseId(null)}
-                  className="px-8 py-4 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-[#FF6B00] transition-colors shadow-2xl"
-                >
-                  Regresar al Panel
-                </button>
-              </div>
-            )}
           </div>
+
+          {isLoadingRoadmap ? (
+            <div className="mx-auto max-w-3xl space-y-4 px-4 pt-8 md:px-6" aria-busy="true">
+              <div className="h-10 w-64 animate-pulse rounded-xl bg-[#f5f5f4]" />
+              <div className="h-16 animate-pulse rounded-2xl bg-[#f5f5f4]" />
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-28 animate-pulse rounded-[1.5rem] bg-[#f5f5f4]" />
+              ))}
+            </div>
+          ) : roadmapData?.roadmap && roadmapData.roadmap.length > 0 ? (
+            <FaithMap
+              roadmap={roadmapData.roadmap}
+              userId={student.id}
+              onRefresh={mutate}
+              courseName={roadmapData.courseName}
+            />
+          ) : (
+            <div className="mx-auto max-w-md px-4 pt-16 text-center">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff7ed] text-[#C2410C]">
+                <AlertCircle size={24} aria-hidden="true" />
+              </span>
+              <h2 className="mt-4 text-xl font-semibold tracking-[-0.01em]">Todavía no hay clases</h2>
+              <p className="mt-2 text-sm text-[#57534e]">
+                El encargado del curso está preparando las clases. Volvé pronto para empezar.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedCourseId(null)}
+                className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-[#0a0a0a] px-6 text-sm font-medium text-white transition-colors hover:bg-[#292524] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] focus-visible:ring-offset-2"
+              >
+                Volver a mis cursos
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ================= MODAL QUICK ENROLL ================= */}
+      {/* ================= INSCRIPCIÓN CON CÓDIGO ================= */}
       <AnimatePresence>
         {enrollModalCourse && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[6000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
-          >
+          <div className="fixed inset-0 z-[6000] flex items-end justify-center p-0 sm:items-center sm:p-4">
             <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-4xl bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden flex flex-col md:flex-row gap-8 md:gap-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeEnroll}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="titulo-inscripcion"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-md rounded-t-[2rem] bg-white p-6 text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:rounded-[2rem] sm:p-8"
             >
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[#FF6B00]/5 blur-[100px] pointer-events-none" />
-
               <button
-                onClick={() => {
-                  setEnrollModalCourse(null);
-                  setCodeDigits(Array(6).fill(""));
-                }}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors z-10"
+                type="button"
+                onClick={closeEnroll}
+                aria-label="Cerrar"
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#f5f5f4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
 
-              {/* Columna Izquierda: Info del Curso */}
-              <div className="flex-1 relative z-10 flex flex-col justify-center space-y-6 md:border-r md:border-white/10 md:pr-10">
-                <div>
-                  <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center mb-5">
-                    <BookOpen className="text-white/60" size={24} />
-                  </div>
-                  <h3 className="text-3xl font-black uppercase italic text-white leading-none mb-4">
-                    {enrollModalCourse.name}
-                  </h3>
-                  <p className="text-sm text-white/50 leading-relaxed">
-                    {enrollModalCourse.description || "Sin descripción detallada."}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
-                    <User size={18} className="text-[#FF6B00]" />
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Cupos Ocupados</p>
-                      <p className="text-sm font-bold text-white">
-                        {enrollModalCourse._count?.courseRegistration || 0} / {enrollModalCourse.quotaLimit || "∞"}
-                      </p>
-                    </div>
-                  </div>
-                  {enrollModalCourse.deadline && (
-                    <div className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
-                      <CalendarClock size={18} className="text-[#FF6B00]" />
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Fecha Límite</p>
-                        <p className="text-sm font-bold text-white">
-                          {new Date(enrollModalCourse.deadline).toLocaleDateString("es-AR", { month: "long", day: "numeric", year: "numeric" })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <p className="text-sm text-[#57534e]">Inscribirme en</p>
+              <h3 id="titulo-inscripcion" className="pr-10 text-2xl font-semibold capitalize leading-tight tracking-[-0.02em]">
+                {enrollModalCourse.name.toLowerCase()}
+              </h3>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#57534e]">
+                <span>
+                  Cupos{" "}
+                  <strong className="font-semibold tabular-nums text-[#0a0a0a]">
+                    {enrollModalCourse._count?.courseRegistration || 0}/{enrollModalCourse.quotaLimit}
+                  </strong>
+                </span>
+                {enrollModalCourse.deadline && (
+                  <span>
+                    Cierra <strong className="font-semibold text-[#0a0a0a]">{shortDate(enrollModalCourse.deadline)}</strong>
+                  </span>
+                )}
               </div>
 
-              {/* Columna Derecha: Ingreso de Código */}
-              <div className="w-full md:w-[40%] relative z-10 flex flex-col justify-center items-center text-center">
-                <div className="w-16 h-16 bg-[#FF6B00]/10 border border-[#FF6B00]/20 rounded-2xl flex items-center justify-center mb-6">
-                  <Key className="text-[#FF6B00]" size={24} />
+              <fieldset className="mt-6">
+                <legend className="sr-only">Código de acceso de 6 caracteres</legend>
+                <div className="flex justify-between gap-2">
+                  {codeDigits.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(el) => {
+                        inputRefs.current[index] = el;
+                      }}
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      autoComplete={index === 0 ? "one-time-code" : "off"}
+                      maxLength={6}
+                      value={digit}
+                      onChange={(e) => handleCodeChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      aria-label={`Carácter ${index + 1} de 6`}
+                      className="h-14 w-full min-w-0 rounded-xl border border-[#e7e5e4] bg-[#fafaf9] text-center font-mono text-2xl font-bold uppercase text-[#0a0a0a] focus:bg-white outline-none transition-[border-color,box-shadow] focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/30"
+                    />
+                  ))}
                 </div>
-                <h4 className="text-xl font-black uppercase italic text-white mb-2">
-                  Código de <span className="text-[#FF6B00]">Acceso</span>
-                </h4>
-                <p className="text-xs text-white/50 font-medium mb-8 max-w-[250px]">
-                  Ingresa los 6 dígitos proporcionados para entrar al curso.
-                </p>
+              </fieldset>
 
-                <div className="w-full flex flex-col items-center gap-8">
-                  <div className="flex gap-2 justify-center">
-                    {codeDigits.map((digit, index) => (
-                      <input
-                        key={index}
-                        ref={(el) => {
-                          inputRefs.current[index] = el;
-                        }}
-                        type="text"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleCodeChange(index, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(index, e)}
-                        className="w-10 h-12 md:w-12 md:h-14 bg-white/5 border border-white/10 rounded-xl text-center text-xl md:text-2xl font-black text-white focus:text-[#FF6B00] focus:bg-[#FF6B00]/5 focus:border-[#FF6B00] focus:ring-2 focus:ring-[#FF6B00]/20 outline-none transition-all uppercase placeholder-white/10 shadow-inner"
-                        placeholder="-"
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleQuickEnroll}
-                    disabled={enrolling || codeDigits.join("").length < 6}
-                    className="w-full max-w-[250px] py-4 bg-[#FF6B00] text-black font-black uppercase text-xs tracking-[0.2em] rounded-xl hover:bg-white transition-colors disabled:opacity-50 flex justify-center items-center gap-2 group"
-                  >
-                    {enrolling ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      <>
-                        Validar e Iniciar{" "}
-                        <ArrowRight
-                          size={16}
-                          className="group-hover:translate-x-1 transition-transform"
-                        />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleQuickEnroll}
+                disabled={enrolling || codeDigits.join("").length < 6}
+                className={`${primaryButton} mt-6`}
+              >
+                {enrolling ? (
+                  <Loader2 className="animate-spin" size={18} aria-label="Inscribiendo" />
+                ) : (
+                  <>
+                    Inscribirme <ArrowRight size={16} aria-hidden="true" />
+                  </>
+                )}
+              </button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* ================= MODAL DE AJUSTES ================= */}
+      {/* ================= AJUSTES ================= */}
       <AnimatePresence>
         {isSettingsOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[5000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          >
+          <div className="fixed inset-0 z-[5000] flex items-end justify-center p-0 sm:items-center sm:p-4">
             <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-lg bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-2xl relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="titulo-ajustes"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-md rounded-t-[2rem] bg-white p-6 text-[#0a0a0a] shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:rounded-[2rem] sm:p-8"
             >
               <button
+                type="button"
                 onClick={() => setIsSettingsOpen(false)}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors"
+                aria-label="Cerrar"
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#f5f5f4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
 
-              <div className="mb-6">
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white leading-none mb-1">
-                  Ajustes
-                </h3>
-                <p className="text-[10px] text-white/40 font-black tracking-widest uppercase">
-                  Personaliza tu experiencia
-                </p>
+              <h3 id="titulo-ajustes" className="text-2xl font-semibold tracking-[-0.02em]">Ajustes</h3>
+              <p className="mt-1 text-sm text-[#57534e]">Tus datos de acceso y de contacto.</p>
+
+              <div role="tablist" aria-label="Secciones de ajustes" className="mt-6 grid grid-cols-3 gap-1 rounded-full bg-[#f5f5f4] p-1">
+                {[
+                  { id: "username", label: "Usuario", icon: User },
+                  { id: "contact", label: "Contacto", icon: Phone },
+                  { id: "password", label: "Contraseña", icon: Key },
+                ].map((t) => {
+                  const active = activeTab === t.id;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setActiveTab(t.id as any)}
+                      className={`relative flex h-10 items-center justify-center gap-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${
+                        active ? "text-white" : "text-[#57534e] hover:text-[#0a0a0a]"
+                      }`}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="ajustes-pestana"
+                          className="absolute inset-0 rounded-full bg-[#0a0a0a]"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                        />
+                      )}
+                      <Icon size={15} className="relative" aria-hidden="true" />
+                      <span className="relative">{t.label}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* TABS DE NAVEGACIÓN */}
-              <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-8">
-                <button
-                  onClick={() => setActiveTab("username")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    activeTab === "username"
-                      ? "bg-[#FF6B00] text-black shadow-lg"
-                      : "text-white/40 hover:text-white"
-                  }`}
-                >
-                  <User size={14} /> Usuario
-                </button>
-                <button
-                  onClick={() => setActiveTab("contact")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    activeTab === "contact"
-                      ? "bg-[#FF6B00] text-black shadow-lg"
-                      : "text-white/40 hover:text-white"
-                  }`}
-                >
-                  <Phone size={14} /> Contacto
-                </button>
-                <button
-                  onClick={() => setActiveTab("password")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    activeTab === "password"
-                      ? "bg-[#FF6B00] text-black shadow-lg"
-                      : "text-white/40 hover:text-white"
-                  }`}
-                >
-                  <Key size={14} /> Clave
-                </button>
-              </div>
-
-              {/* --- FORMULARIO DE USUARIO --- */}
               {activeTab === "username" && (
-                <form
-                  onSubmit={handleUsernameSubmit}
-                  className="space-y-4 animate-in fade-in zoom-in-95 duration-300"
-                >
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Nombre de Usuario
-                    </label>
+                <form onSubmit={handleUsernameSubmit} className="mt-6 space-y-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ajuste-usuario" className={labelClass}>Nombre de usuario</label>
                     <input
+                      id="ajuste-usuario"
                       type="text"
                       required
+                      autoComplete="username"
                       value={usernameData}
                       onChange={(e) => setUsernameData(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="Ej: juanperez123"
+                      className={inputClass}
+                      placeholder="Ej: juanperez"
                     />
                   </div>
-                  {status.error && (
-                    <p className="text-red-500 text-xs text-center bg-red-500/10 p-2 rounded-lg">
-                      {status.error}
-                    </p>
-                  )}
-                  {status.success && (
-                    <p className="text-green-500 text-xs text-center bg-green-500/10 p-2 rounded-lg">
-                      {status.success}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={status.loading}
-                    className="w-full py-4 mt-2 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-[#FF6B00] transition-colors disabled:opacity-50 flex justify-center items-center"
-                  >
-                    {status.loading ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      "Actualizar Usuario"
-                    )}
+                  {statusMessage}
+                  <button type="submit" disabled={status.loading} className={primaryButton}>
+                    {status.loading ? <Loader2 className="animate-spin" size={18} /> : "Guardar usuario"}
                   </button>
                 </form>
               )}
 
-              {/* --- FORMULARIO DE CONTACTO --- */}
               {activeTab === "contact" && (
-                <form
-                  onSubmit={handleContactSubmit}
-                  className="space-y-4 animate-in fade-in zoom-in-95 duration-300"
-                >
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Teléfono
-                    </label>
+                <form onSubmit={handleContactSubmit} className="mt-6 space-y-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ajuste-telefono" className={labelClass}>Teléfono</label>
                     <input
-                      type="text"
+                      id="ajuste-telefono"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={contactData.phone}
-                      onChange={(e) =>
-                        setContactData({
-                          ...contactData,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="+54 11 1234-5678"
+                      onChange={(e) => setContactData({ ...contactData, phone: e.target.value })}
+                      className={inputClass}
+                      placeholder="Ej: 3704 123456"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Dirección
-                    </label>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="ajuste-direccion" className={labelClass}>Dirección o ciudad</label>
                     <input
+                      id="ajuste-direccion"
                       type="text"
+                      autoComplete="street-address"
                       value={contactData.address}
-                      onChange={(e) =>
-                        setContactData({
-                          ...contactData,
-                          address: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                      placeholder="Calle Principal 123"
+                      onChange={(e) => setContactData({ ...contactData, address: e.target.value })}
+                      className={inputClass}
+                      placeholder="Ej: Don Bosco 1234"
                     />
                   </div>
-                  {status.error && (
-                    <p className="text-red-500 text-xs text-center bg-red-500/10 p-2 rounded-lg">
-                      {status.error}
-                    </p>
-                  )}
-                  {status.success && (
-                    <p className="text-green-500 text-xs text-center bg-green-500/10 p-2 rounded-lg">
-                      {status.success}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={status.loading}
-                    className="w-full py-4 mt-2 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-[#FF6B00] transition-colors disabled:opacity-50 flex justify-center items-center"
-                  >
-                    {status.loading ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      "Actualizar Contacto"
-                    )}
+                  {statusMessage}
+                  <button type="submit" disabled={status.loading} className={primaryButton}>
+                    {status.loading ? <Loader2 className="animate-spin" size={18} /> : "Guardar contacto"}
                   </button>
                 </form>
               )}
 
-              {/* --- FORMULARIO DE CONTRASEÑA --- */}
               {activeTab === "password" && (
-                <form
-                  onSubmit={handlePasswordSubmit}
-                  className="space-y-4 animate-in fade-in zoom-in-95 duration-300"
-                >
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Contraseña Actual
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={passwords.current}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, current: e.target.value })
-                        }
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Nueva Contraseña
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        minLength={8}
-                        value={passwords.new}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, new: e.target.value })
-                        }
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                        placeholder="Mínimo 8 caracteres"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">
-                      Confirmar Nueva Contraseña
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={passwords.confirm}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, confirm: e.target.value })
-                        }
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white focus:outline-none focus:border-[#FF6B00] transition-colors"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  {status.error && (
-                    <p className="text-red-500 text-xs text-center bg-red-500/10 p-2 rounded-lg">
-                      {status.error}
-                    </p>
-                  )}
-                  {status.success && (
-                    <p className="text-green-500 text-xs text-center bg-green-500/10 p-2 rounded-lg">
-                      {status.success}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={status.loading || !!status.success}
-                    className="w-full py-4 mt-2 bg-white text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-[#FF6B00] transition-colors disabled:opacity-50 flex justify-center items-center"
-                  >
-                    {status.loading ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      "Actualizar Contraseña"
-                    )}
+                <form onSubmit={handlePasswordSubmit} className="mt-6 space-y-4">
+                  {passwordField("ajuste-clave-actual", "Contraseña actual", "current", "••••••••", { autoComplete: "current-password" })}
+                  {passwordField("ajuste-clave-nueva", "Contraseña nueva", "new", "Mínimo 8 caracteres", { minLength: 8, autoComplete: "new-password" })}
+                  {passwordField("ajuste-clave-repetir", "Repetí la contraseña nueva", "confirm", "••••••••", { autoComplete: "new-password" })}
+                  {statusMessage}
+                  <button type="submit" disabled={status.loading || !!status.success} className={primaryButton}>
+                    {status.loading ? <Loader2 className="animate-spin" size={18} /> : "Cambiar contraseña"}
                   </button>
                 </form>
               )}
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </main>

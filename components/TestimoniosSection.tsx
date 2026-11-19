@@ -50,8 +50,13 @@ export default function TestimoniosSection({ limit }: TestimoniosProps) {
             ))}
           </div>
         ) : testimonios.length > 0 ? (
-          // Cada tarjeta toma el ancho de su contenido, hasta un máximo
-          <div className="flex flex-wrap items-start justify-center gap-6">
+          // Cada tarjeta toma el ancho de su contenido, hasta un máximo.
+          // En la portada (con límite) van en una sola fila y se achican para entrar.
+          <div
+            className={`flex items-start justify-center gap-6 ${
+              limit ? "flex-col items-center lg:flex-row lg:items-start lg:flex-nowrap lg:[&>*]:min-w-[16.5rem] lg:[&>*]:shrink" : "flex-wrap"
+            }`}
+          >
             {testimonios.map((testimonio, index) => (
               <motion.figure
                 key={testimonio.id}

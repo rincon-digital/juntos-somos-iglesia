@@ -7,6 +7,7 @@ import {
   Clock,
   RefreshCw,
   ChevronRight,
+  ChevronLeft,
   CheckCircle2,
   User,
   Loader2,
@@ -65,9 +66,10 @@ export default function StudentPerformanceTable({ students, courseId }: Props) {
   const filteredStudents = useMemo(() => {
     const baseList = Array.isArray(localStudents) ? localStudents : [];
     return baseList.filter((reg) => {
-      const name = reg?.user?.fullName?.toLowerCase() || "";
-      const dni = reg?.user?.dni || "";
-      return name.includes(filter.toLowerCase()) || dni.includes(filter);
+      const q = filter.toLowerCase().trim();
+      return [reg?.user?.fullName, reg?.user?.username, reg?.user?.dni, reg?.user?.phone]
+        .filter(Boolean)
+        .some((v: string) => v.toLowerCase().includes(q));
     });
   }, [localStudents, filter]);
 
@@ -84,13 +86,15 @@ export default function StudentPerformanceTable({ students, courseId }: Props) {
 
     const tableData = localStudents.map((reg: any) => [
       reg?.user?.fullName || "Sin registrar",
+      reg?.user?.username ? `@${reg.user.username}` : "—",
       reg?.user?.dni || "Sin DNI",
+      reg?.user?.phone || "—",
       reg?.user?.address || "Sin domicilio",
     ]);
 
     autoTable(doc, {
       startY: 35,
-      head: [["Nombre Completo", "DNI", "Domicilio"]],
+      head: [["Nombre completo", "Usuario", "DNI", "Teléfono", "Dirección"]],
       body: tableData,
       theme: "striped",
       headStyles: { fillColor: [255, 107, 0] },
@@ -197,30 +201,164 @@ export default function StudentPerformanceTable({ students, courseId }: Props) {
     }
   };
 
+  const btnGhost =
+    "inline-flex h-10 items-center gap-2 rounded-full border border-[#e7e5e4] px-4 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]";
+  const th = "px-4 py-3 text-left text-xs font-medium text-[#57534e]";
+  const td = "px-4 py-3.5 text-sm";
+  const formatDate = (d?: string | Date) =>
+    d ? new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" }) : "—";
+
   return (
-    <div className="w-full space-y-6 text-white">
+    <div className="w-full space-y-5 text-[#0a0a0a] font-[family-name:var(--font-poppins)]">
+      {selectedHistory && activeStudent ? (
+        /* ── PROGRESO DEL ALUMNO (en la misma sección) ── */
+        <div className="space-y-5">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => { setSelectedHistory(null); setActiveStudent(null); }}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#e7e5e4] pl-3 pr-4 text-sm font-medium transition-colors duration-200 hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+            >
+              <ChevronLeft size={16} aria-hidden="true" /> Volver a la lista
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff7ed] text-sm font-semibold text-[#C2410C]">
+                {activeStudent.name.charAt(0).toUpperCase()}
+              </span>
+              <div>
+                <p className="text-sm text-[#57534e]">Progreso del alumno</p>
+                <h3 className="text-lg font-semibold leading-tight tracking-[-0.01em]">{activeStudent.name}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {selectedHistory.length === 0 && (
+              <p className="py-12 text-center text-sm text-[#57534e]">Este curso todavía no tiene clases.</p>
+            )}
+            {selectedHistory.map((video, vIdx) => (
+              <div key={vIdx} className="overflow-hidden rounded-2xl border border-[#e7e5e4]">
+                <div className="flex items-center justify-between gap-4 bg-[#fafaf9] px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="text-xs text-[#57534e]">Clase {video.order}</p>
+                    <h4 className="truncate font-semibold">{video.title}</h4>
+                  </div>
+                  {(() => {
+                    // Trabado = alguna pregunta con 2 intentos activos sin acertar (misma regla del servidor)
+                    const isStuck = (video.videoReview || []).some((q: any) => {
+                      const active = (q.examAnswers || []).filter((a: any) => !a.isArchived);
+                      return active.length >= 2 && !active.some((a: any) => a.isCorrect);
+                    });
+                    const hasStarted = (video.videoReview || []).some((q: any) =>
+                      (q.examAnswers || []).some((a: any) => !a.isArchived),
+                    );
+
+                    if (video.videoProgress?.[0]?.isCompleted) {
+                      return (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#ecfdf5] px-3 py-1 text-xs font-medium text-green-700">
+                          <CheckCircle2 size={14} aria-hidden="true" /> Completada
+                        </span>
+                      );
+                    }
+                    if (isStuck) {
+                      return (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fef2f2] px-3 py-1 text-xs font-medium text-red-700">
+                            <AlertTriangle size={14} aria-hidden="true" /> Trabado · 2 intentos
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleReleaseStudent(video.id)}
+                            disabled={isResetting === video.id}
+                            title="Borra los intentos fallidos para que pueda volver a rendir"
+                            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#0a0a0a] px-3 text-xs font-medium text-white transition-colors hover:bg-[#292524] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] disabled:opacity-50"
+                          >
+                            {isResetting === video.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                            Habilitar reintento
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#f5f5f4] px-3 py-1 text-xs font-medium text-[#57534e]">
+                        <Clock size={14} aria-hidden="true" /> {hasStarted ? "En curso" : "Sin empezar"}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                <div className="space-y-5 p-5">
+                  {video.videoReview.map((q: any, qIdx: number) => (
+                    <div key={qIdx}>
+                      <p className="flex items-start gap-2.5 text-sm font-medium">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f5f5f4] text-xs text-[#57534e]">{qIdx + 1}</span>
+                        {q.question}
+                      </p>
+                      <div className="ml-7 mt-2 space-y-1.5">
+                        {q.examAnswers.map((ans: any, aIdx: number) => (
+                          <div
+                            key={aIdx}
+                            className={cn(
+                              "flex items-center justify-between gap-3 rounded-xl px-3.5 py-2 text-sm",
+                              ans.isCorrect ? "bg-[#ecfdf5] text-green-800" : "bg-[#fef2f2] text-red-800",
+                              ans.isArchived && "opacity-50",
+                            )}
+                          >
+                            <span className="flex items-center gap-2">
+                              {ans.isCorrect ? <CheckCircle2 size={15} aria-hidden="true" /> : <AlertTriangle size={15} aria-hidden="true" />}
+                              Intento {aIdx + 1}: <span className="font-medium">{ans.response}</span>
+                            </span>
+                            <span className="shrink-0 text-xs opacity-70">
+                              {new Date(ans.createdAt).toLocaleDateString("es-AR")}
+                              {ans.isArchived && " · anterior"}
+                            </span>
+                          </div>
+                        ))}
+                        {q.examAnswers.length === 0 && <p className="text-sm text-[#a8a29e]">Todavía no respondió esta pregunta.</p>}
+                      </div>
+                    </div>
+                  ))}
+                  {video.videoReview.length === 0 && (
+                    <p className="py-2 text-center text-sm text-[#a8a29e]">Esta clase no tiene evaluación.</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
       {/* ── CABECERA ── */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative w-full sm:max-w-sm group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#FF6B00] transition-colors" size={15} />
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative w-full max-w-sm">
+          <label htmlFor="buscar-alumno" className="sr-only">Buscar alumno</label>
+          <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]" size={16} aria-hidden="true" />
           <input
-            type="text"
-            placeholder="Buscar alumno o DNI..."
+            id="buscar-alumno"
+            type="search"
+            placeholder="Buscar por nombre, usuario, DNI o teléfono…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full bg-[#0f0f0f] border border-white/[0.08] rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder:text-white/20 outline-none focus:border-[#FF6B00]/40 transition-all"
+            className="h-11 w-full rounded-full border border-[#e7e5e4] bg-white pl-11 pr-4 text-sm outline-none transition-[border-color,box-shadow] placeholder:text-[#a8a29e] hover:border-[#d6d3d1] focus:border-[#0a0a0a] focus:ring-2 focus:ring-[#FF6B00]/30"
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-white/30 font-medium">{localStudents.length} alumno(s)</span>
+        <div className="flex items-center gap-2">
+          <span className="mr-1 text-sm text-[#57534e]">
+            <span className="font-semibold tabular-nums text-[#0a0a0a]">{localStudents.length}</span>{" "}
+            {localStudents.length === 1 ? "alumno" : "alumnos"}
+          </span>
           {localStudents.length > 0 && (
             <>
-              <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.05] border border-white/[0.1] text-white hover:bg-[#FF6B00] hover:text-black hover:border-[#FF6B00] transition-all rounded-xl text-xs font-bold uppercase tracking-wide">
-                <Download size={13} /> <span className="hidden sm:inline">Exportar PDF</span>
+              <button type="button" onClick={handleDownloadPDF} className={btnGhost}>
+                <Download size={15} aria-hidden="true" /> Exportar PDF
               </button>
-              <button onClick={() => setShowClearConfirm(true)} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-xs font-bold uppercase tracking-wide">
-                <Trash2 size={13} /> <span className="hidden sm:inline">Vaciar curso</span>
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-red-50 px-4 text-sm font-medium text-red-700 transition-colors duration-200 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+              >
+                <Trash2 size={15} aria-hidden="true" /> Vaciar curso
               </button>
             </>
           )}
@@ -229,73 +367,163 @@ export default function StudentPerformanceTable({ students, courseId }: Props) {
 
       {/* ── TABLA ── */}
       {filteredStudents.length > 0 ? (
-        <div className="bg-[#0f0f0f] border border-white/[0.07] rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] border-b border-white/[0.06] px-6 py-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/25">Alumno</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/25 text-center px-8">Estado</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/25 text-center px-4">Historial</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/25 text-right">Acción</span>
-          </div>
-
-          <div className="divide-y divide-white/[0.04]">
-            {filteredStudents.map((reg, idx) => {
-              const userId = reg.userId || reg?.user?.id;
-              const initial = reg?.user?.fullName?.charAt(0)?.toUpperCase() || "?";
-              return (
-                <motion.div key={userId || idx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }} className="grid grid-cols-[1fr_auto_auto_auto] items-center px-6 py-4 hover:bg-white/[0.02] transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center font-black text-[#FF6B00] text-sm shrink-0">{initial}</div>
-                    <div>
-                      <p className="text-sm font-bold text-white leading-tight">{reg?.user?.fullName || "Sin nombre"}</p>
-                      <p className="text-[11px] text-white/25 font-medium mt-0.5">DNI: {reg?.user?.dni || "N/A"}</p>
-                    </div>
-                  </div>
-                  <div className="px-8">
-                    {updatingRankId === userId ? <Loader2 className="animate-spin text-[#FF6B00] mx-auto" size={16} /> : (
-                      <select value={reg?.user?.rank || "concurre"} onChange={(e) => handleRankChange(userId, e.target.value)} className="bg-white/[0.05] border border-white/[0.08] text-[11px] font-bold uppercase tracking-wide text-white/70 rounded-lg px-3 py-2 outline-none focus:border-[#FF6B00]/40 cursor-pointer appearance-none hover:bg-white/[0.08] transition-colors text-center">
-                        <option value="concurre" className="bg-[#0f0f0f]">Concurre</option>
-                        <option value="miembro" className="bg-[#0f0f0f]">Miembro</option>
-                      </select>
-                    )}
-                  </div>
-                  <div className="px-4 text-center">
-                    <button onClick={() => handleViewHistory(userId, reg?.user?.fullName || "Usuario")} disabled={loadingHistory && activeStudent?.id === userId} className="w-9 h-9 mx-auto rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-white/30 hover:bg-[#FF6B00] hover:text-white hover:border-[#FF6B00] transition-all disabled:opacity-40">
-                      {loadingHistory && activeStudent?.id === userId ? <Loader2 className="animate-spin" size={14} /> : <ChevronRight size={14} />}
-                    </button>
-                  </div>
-                  <div className="text-right">
-                    <button onClick={() => setStudentToDelete(reg)} className="w-9 h-9 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center justify-center text-red-500/40 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all" title="Eliminar alumno">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+        <div className="overflow-x-auto rounded-2xl border border-[#e7e5e4]">
+          <table className="w-full min-w-[56rem] border-collapse">
+            <thead className="bg-[#fafaf9]">
+              <tr className="border-b border-[#e7e5e4]">
+                <th scope="col" className={th}>Alumno</th>
+                <th scope="col" className={th}>DNI o pasaporte</th>
+                <th scope="col" className={th}>Teléfono</th>
+                <th scope="col" className={th}>Dirección o ciudad</th>
+                <th scope="col" className={th}>Inscripción</th>
+                <th scope="col" className={th}>Estado</th>
+                <th scope="col" className={`${th} text-right`}>
+                  <span className="sr-only">Acciones</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f5f5f4]">
+              {filteredStudents.map((reg, idx) => {
+                const userId = reg.userId || reg?.user?.id;
+                const name = reg?.user?.fullName || "Sin nombre";
+                const initial = name.charAt(0).toUpperCase();
+                return (
+                  <tr key={userId || idx} className="transition-colors hover:bg-[#fafaf9]">
+                    <td className={td}>
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff7ed] text-sm font-semibold text-[#C2410C]">
+                          {initial}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{name}</p>
+                          {reg?.user?.username && <p className="truncate text-xs text-[#57534e]">@{reg.user.username}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className={`${td} tabular-nums`}>{reg?.user?.dni || "—"}</td>
+                    <td className={`${td} tabular-nums`}>
+                      {reg?.user?.phone ? (
+                        <a href={`tel:${reg.user.phone}`} className="hover:text-[#C2410C] hover:underline">
+                          {reg.user.phone}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className={`${td} max-w-[14rem] truncate text-[#44403c]`} title={reg?.user?.address || undefined}>
+                      {reg?.user?.address || "—"}
+                    </td>
+                    <td className={`${td} whitespace-nowrap text-[#57534e]`}>{formatDate(reg?.createdAt)}</td>
+                    <td className={td}>
+                      {updatingRankId === userId ? (
+                        <Loader2 className="animate-spin text-[#FF6B00]" size={16} aria-label="Guardando" />
+                      ) : (
+                        <select
+                          aria-label={`Estado de ${name}`}
+                          value={reg?.user?.rank || "concurre"}
+                          onChange={(e) => handleRankChange(userId, e.target.value)}
+                          className={`h-8 cursor-pointer rounded-full border-0 px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] ${
+                            reg?.user?.rank === "miembro" ? "bg-[#ecfdf5] text-green-700" : "bg-[#f5f5f4] text-[#44403c]"
+                          }`}
+                        >
+                          <option value="concurre">Concurre</option>
+                          <option value="miembro">Miembro</option>
+                        </select>
+                      )}
+                    </td>
+                    <td className={`${td} text-right`}>
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleViewHistory(userId, name)}
+                          disabled={loadingHistory && activeStudent?.id === userId}
+                          aria-label={`Ver progreso de ${name}`}
+                          title="Ver progreso"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-[#57534e] transition-colors hover:bg-[#f5f5f4] hover:text-[#0a0a0a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00] disabled:opacity-40"
+                        >
+                          {loadingHistory && activeStudent?.id === userId ? <Loader2 className="animate-spin" size={15} /> : <ChevronRight size={16} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStudentToDelete(reg)}
+                          aria-label={`Quitar a ${name} del curso`}
+                          title="Quitar del curso"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="py-20 text-center border border-dashed border-white/[0.08] rounded-2xl">
-          <Users size={36} className="mx-auto text-white/10 mb-4" />
-          <h3 className="text-base font-black uppercase tracking-widest text-white/25">Sin resultados</h3>
+        <div className="rounded-2xl border border-dashed border-[#e7e5e4] px-6 py-16 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f4] text-[#57534e]">
+            <Users size={20} aria-hidden="true" />
+          </span>
+          <h3 className="mt-3 font-semibold">{filter ? "No hay alumnos con esa búsqueda" : "Todavía no hay alumnos inscriptos"}</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-[#57534e]">
+            {filter ? "Probá con otro nombre, DNI o teléfono." : "Cuando alguien se inscriba con el código de acceso, va a aparecer acá."}
+          </p>
         </div>
       )}
 
-      {/* ── MODALES ── */}
+        </>
+      )}
+
+      {/* ── CONFIRMAR QUITAR / VACIAR ── */}
       <AnimatePresence>
         {(showClearConfirm || studentToDelete) && (
-          <div className="fixed inset-0 z-[6000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl">
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="bg-[#0f0f0f] border border-white/[0.08] max-w-sm w-full rounded-2xl p-8 text-center shadow-2xl">
-              <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <Trash2 className="text-red-400" size={24} />
-              </div>
-              <h2 className="text-xl font-black uppercase tracking-tight mb-2">{studentToDelete ? "¿Eliminar alumno?" : "¿Vaciar curso?"}</h2>
-              <p className="text-sm text-white/40 mb-7 leading-relaxed">
-                {studentToDelete ? `Estás por eliminar a ${studentToDelete?.user?.fullName} de este curso.` : "Se eliminarán todos los alumnos del curso."}
+          <div className="fixed inset-0 z-[7000] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowClearConfirm(false); setStudentToDelete(null); }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="titulo-quitar-alumno"
+              initial={{ opacity: 0, scale: 0.98, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-sm rounded-[2rem] bg-white p-8 text-center shadow-[0_24px_60px_rgba(0,0,0,0.18)]"
+            >
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fef2f2] text-red-700">
+                <Trash2 size={22} aria-hidden="true" />
+              </span>
+              <h2 id="titulo-quitar-alumno" className="mt-4 text-xl font-semibold tracking-[-0.01em]">
+                {studentToDelete ? "¿Quitar alumno del curso?" : "¿Vaciar el curso?"}
+              </h2>
+              <p className="mt-2 text-sm text-[#57534e]">
+                {studentToDelete
+                  ? `${studentToDelete?.user?.fullName} deja de estar inscripto en este curso.`
+                  : "Se quitan todos los alumnos inscriptos. No se puede deshacer."}
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => { setShowClearConfirm(false); setStudentToDelete(null); }} disabled={isClearing} className="py-3 bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08] rounded-xl font-bold uppercase text-xs tracking-wide transition-colors">Cancelar</button>
-                <button onClick={studentToDelete ? handleDeleteIndividual : handleClearCourse} disabled={isClearing} className="py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold uppercase text-xs tracking-wide flex items-center justify-center gap-2 transition-colors disabled:opacity-50">
-                  {isClearing && <Loader2 className="animate-spin" size={13} />} {studentToDelete ? "Eliminar" : "Vaciar"}
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowClearConfirm(false); setStudentToDelete(null); }}
+                  disabled={isClearing}
+                  className="h-12 rounded-full border border-[#e7e5e4] text-sm font-medium transition-colors hover:bg-[#f5f5f4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={studentToDelete ? handleDeleteIndividual : handleClearCourse}
+                  disabled={isClearing}
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-red-700 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 disabled:opacity-60"
+                >
+                  {isClearing && <Loader2 className="animate-spin" size={14} aria-hidden="true" />}
+                  {studentToDelete ? "Quitar" : "Vaciar"}
                 </button>
               </div>
             </motion.div>
@@ -303,94 +531,6 @@ export default function StudentPerformanceTable({ students, courseId }: Props) {
         )}
       </AnimatePresence>
 
-      {/* ── MODAL HISTORIAL ── */}
-      <AnimatePresence>
-        {selectedHistory && activeStudent && (
-          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4 md:p-8">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedHistory(null)} className="absolute inset-0 bg-black/85 backdrop-blur-xl" />
-            <motion.div initial={{ opacity: 0, scale: 0.97, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 16 }} className="relative bg-[#0f0f0f] border border-white/[0.08] w-full max-w-4xl h-[88vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-              <div className="px-8 py-6 border-b border-white/[0.06] flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-[#FF6B00]/10 border border-[#FF6B00]/20 flex items-center justify-center"><User size={20} className="text-[#FF6B00]" /></div>
-                  <div>
-                    <h3 className="text-base font-black uppercase tracking-tight text-white">Historial del alumno</h3>
-                    <p className="text-[11px] text-[#FF6B00]/70 font-bold uppercase tracking-widest mt-0.5">{activeStudent.name}</p>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedHistory(null)} className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.07] flex items-center justify-center text-white/40 hover:bg-white/[0.1] hover:text-white transition-all"><X size={16} /></button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {selectedHistory.map((video, vIdx) => (
-                  <div key={vIdx} className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
-                    <div className="flex justify-between items-center px-6 py-4 border-b border-white/[0.05]">
-                      <div>
-                        <span className="text-[10px] font-black text-[#FF6B00]/70 uppercase tracking-widest">Módulo {video.order}</span>
-                        <h4 className="text-sm font-bold uppercase tracking-tight text-white mt-0.5">{video.title}</h4>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {video.videoProgress?.[0]?.isCompleted ? (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg text-[11px] font-bold uppercase border border-green-500/20"><CheckCircle2 size={13} /> Completado</div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.04] text-white/30 rounded-lg text-[11px] font-bold uppercase border border-white/[0.07]"><Clock size={13} /> En proceso</div>
-                            <button 
-                              onClick={() => handleReleaseStudent(video.id)}
-                              disabled={isResetting === video.id}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-[#FF6B00]/10 text-[#FF6B00] border border-[#FF6B00]/20 rounded-lg text-[11px] font-bold uppercase hover:bg-[#FF6B00] hover:text-black transition-all disabled:opacity-50"
-                              title="Permite al alumno reintentar el examen borrando intentos fallidos"
-                            >
-                              {isResetting === video.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-                              Liberar
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* SECCIÓN DE PREGUNTAS Y RESPUESTAS */}
-                    <div className="p-6 space-y-6 bg-black/20">
-                      {video.videoReview.map((q: any, qIdx: number) => (
-                        <div key={qIdx} className="space-y-3">
-                          <p className="text-xs font-bold text-white/70 flex items-start gap-3">
-                            <span className="w-5 h-5 rounded bg-white/5 flex items-center justify-center text-[10px] text-white/30 shrink-0 mt-0.5">{qIdx + 1}</span>
-                            {q.question}
-                          </p>
-                          <div className="ml-8 space-y-2">
-                            {q.examAnswers.map((ans: any, aIdx: number) => (
-                              <div key={aIdx} className={cn(
-                                "flex items-center justify-between px-4 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-wide",
-                                ans.isCorrect ? "bg-green-500/5 border-green-500/10 text-green-400" : "bg-red-500/5 border-red-500/10 text-red-400",
-                                ans.isArchived && "opacity-40"
-                              )}>
-                                <div className="flex items-center gap-3">
-                                  {ans.isCorrect ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-                                  <span>Intento {aIdx + 1}: Respuesta <span className="text-white ml-1">{ans.response}</span></span>
-                                </div>
-                                <span className="text-[9px] opacity-40 font-medium">
-                                  {new Date(ans.createdAt).toLocaleDateString()} {ans.isArchived && "• HISTORIAL"}
-                                </span>
-                              </div>
-                            ))}
-                            {q.examAnswers.length === 0 && (
-                              <p className="text-[10px] text-white/20 italic ml-1">El alumno aún no ha intentado esta pregunta.</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {video.videoReview.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-6 text-white/10">
-                          <Clock size={24} className="mb-2" />
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em]">Sin evaluación configurada</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
